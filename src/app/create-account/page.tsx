@@ -13,9 +13,13 @@ import {
   ArrowRight,
   Sparkles,
   Building2,
+  AlertCircle,
+  UserCheck,
 } from "lucide-react";
+import { useUser } from "@/context/UserContext";
 
 export default function CreateAccountPage() {
+  const { login } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,7 +34,8 @@ export default function CreateAccountPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [createdUser, setCreatedUser] = useState<import("@/context/UserContext").UserDetails | null>(null);
 
   // Email format validation
   const isEmailValid = useMemo(() => {
@@ -60,9 +65,12 @@ export default function CreateAccountPage() {
   }, [passwordCriteria]);
 
   const strengthLabel = useMemo(() => {
-    if (!password) return { text: "Empty", color: "bg-zinc-700", textColor: "text-zinc-500", percent: 0 };
-    if (passwordScore <= 2) return { text: "Weak", color: "bg-rose-500", textColor: "text-rose-400", percent: 33 };
-    if (passwordScore <= 4) return { text: "Medium", color: "bg-amber-500", textColor: "text-amber-400", percent: 66 };
+    if (!password)
+      return { text: "Empty", color: "bg-zinc-700", textColor: "text-zinc-500", percent: 0 };
+    if (passwordScore <= 2)
+      return { text: "Weak", color: "bg-rose-500", textColor: "text-rose-400", percent: 33 };
+    if (passwordScore <= 4)
+      return { text: "Medium", color: "bg-amber-500", textColor: "text-amber-400", percent: 66 };
     return { text: "Strong", color: "bg-emerald-500", textColor: "text-emerald-400", percent: 100 };
   }, [password, passwordScore]);
 
@@ -78,24 +86,47 @@ export default function CreateAccountPage() {
     passwordsMatch &&
     agreeTerms;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched({
       email: true,
       password: true,
       confirmPassword: true,
     });
+    setApiError(null);
 
     if (!isFormValid) {
       return;
     }
 
     setIsSubmitting(true);
-    // Frontend only simulation
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create account");
+      }
+
+      // Store in UserContext
+      login(data.user, data.token);
+      setCreatedUser(data.user);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      setApiError(msg);
+    } finally {
       setIsSubmitting(false);
-      setFormSubmitted(true);
-    }, 1000);
+    }
   };
 
   const handleReset = () => {
@@ -104,7 +135,8 @@ export default function CreateAccountPage() {
     setConfirmPassword("");
     setAgreeTerms(false);
     setTouched({ email: false, password: false, confirmPassword: false });
-    setFormSubmitted(false);
+    setCreatedUser(null);
+    setApiError(null);
   };
 
   return (
@@ -131,37 +163,69 @@ export default function CreateAccountPage() {
             </h1>
           </div>
           <p className="text-sm text-zinc-400">
-            Sign up to get started with your ERP system workspace
+            Sign up to get started as a <span className="text-indigo-400 font-medium">System Admin</span>
           </p>
         </div>
 
         {/* Card Container */}
         <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 relative">
-          {formSubmitted ? (
+          {createdUser ? (
             <div className="text-center py-6 space-y-4">
               <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10 animate-bounce">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <h2 className="text-xl font-bold text-white">
-                Account Validation Successful!
+                Account Created & Logged In!
               </h2>
-              <p className="text-sm text-zinc-400 max-w-sm mx-auto">
-                Your frontend form validated correctly. Email:{" "}
-                <span className="text-indigo-400 font-medium">{email}</span>.
-                Passwords matched seamlessly!
+
+              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 text-left space-y-2 text-xs">
+                <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
+                  <span className="text-zinc-400">Assigned Role:</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1">
+                    <UserCheck className="w-3 h-3" />
+                    {createdUser.role}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Email:</span>
+                  <span className="text-zinc-200 font-mono">{createdUser.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">User ID:</span>
+                  <span className="text-zinc-500 font-mono text-[11px]">{createdUser.id}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-emerald-400">
+                JWT Authentication Token successfully generated & stored in UserContext.
               </p>
-              <div className="pt-4">
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/dashboard"
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-medium text-white transition-all text-center shadow-lg shadow-indigo-600/20"
+                >
+                  Go to Protected Dashboard
+                </Link>
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-medium text-white transition-all duration-150 border border-zinc-700 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-medium text-zinc-300 transition-all border border-zinc-700 cursor-pointer"
                 >
-                  Create Another Account
+                  Create Another
                 </button>
               </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
+              {/* API Error Alert */}
+              {apiError && (
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{apiError}</span>
+                </div>
+              )}
+
               {/* Email Input */}
               <div className="space-y-1.5">
                 <label
@@ -180,7 +244,7 @@ export default function CreateAccountPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
-                    placeholder="name@company.com"
+                    placeholder="admin@company.com"
                     className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-zinc-950/60 border text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all duration-200 ${
                       touched.email && !isEmailValid && email.length > 0
                         ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
@@ -437,11 +501,11 @@ export default function CreateAccountPage() {
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    <span>Creating Account...</span>
+                    <span>Creating System Admin Account...</span>
                   </div>
                 ) : (
                   <>
-                    <span>Create Account</span>
+                    <span>Create System Admin Account</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -453,7 +517,7 @@ export default function CreateAccountPage() {
           <div className="mt-6 pt-6 border-t border-zinc-800 text-center text-xs text-zinc-400">
             Already have an account?{" "}
             <Link
-              href="/"
+              href="/login"
               className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline inline-flex items-center gap-1"
             >
               Sign In
