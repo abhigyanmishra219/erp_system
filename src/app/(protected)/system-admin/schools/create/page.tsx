@@ -177,20 +177,20 @@ export default function CreateSchoolPage() {
       <div className="space-y-2">
         <Link
           href="/system-admin/schools"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Schools List</span>
         </Link>
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400">
+          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary">
             <SchoolIcon className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
               Onboard New Tenant School
             </h1>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               Provision a new multi-tenant school database instance and configure initial subscription parameters.
             </p>
           </div>
@@ -199,14 +199,14 @@ export default function CreateSchoolPage() {
 
       {/* Error Alert */}
       {errorMessage && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
           <button
             onClick={() => setErrorMessage(null)}
-            className="text-rose-400 hover:text-rose-300 font-bold"
+            className="text-destructive hover:opacity-80 font-bold cursor-pointer"
           >
             ×
           </button>
@@ -216,17 +216,17 @@ export default function CreateSchoolPage() {
       {/* Main Form */}
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* Section 1: Basic Information */}
-        <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-          <div className="flex items-center gap-2 text-zinc-200 font-semibold text-sm border-b border-zinc-800/80 pb-3">
-            <Building2 className="w-4 h-4 text-indigo-400" />
+        <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 text-foreground font-semibold text-sm border-b border-border pb-3">
+            <Building2 className="w-4 h-4 text-primary" />
             <span>1. Basic School Information</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             {/* School Name */}
             <div className="space-y-1.5">
-              <label htmlFor="name" className="font-medium text-zinc-300">
-                School Name <span className="text-rose-400">*</span>
+              <label htmlFor="name" className="font-medium text-foreground">
+                School Name <span className="text-destructive">*</span>
               </label>
               <input
                 id="name"
@@ -235,18 +235,18 @@ export default function CreateSchoolPage() {
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="e.g. City Montessori School, CMS, St. Xavier's"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             {/* School Code */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label htmlFor="code" className="font-medium text-zinc-300">
+                <label htmlFor="code" className="font-medium text-foreground">
                   School Code
                 </label>
-                <span className="text-[10px] text-indigo-400 font-medium inline-flex items-center gap-1 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                  <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
+                <span className="text-[10px] text-primary font-medium inline-flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  <Sparkles className="w-2.5 h-2.5 text-primary" />
                   <span>Auto-Generated & Unique</span>
                 </span>
               </div>
@@ -263,19 +263,19 @@ export default function CreateSchoolPage() {
                     setIsCodeCustomized(true);
                   }}
                   placeholder="Auto-generated on typing school name..."
-                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 font-mono uppercase text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full pl-3.5 pr-24 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary font-mono uppercase text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <button
                   type="button"
                   onClick={handleRegenerateCode}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-medium transition-all flex items-center gap-1 border border-zinc-700/60 cursor-pointer"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 text-foreground text-[11px] font-medium transition-all flex items-center gap-1 border border-border cursor-pointer shadow-sm"
                   title="Generate a new unique code"
                 >
-                  <RefreshCw className="w-3 h-3 text-indigo-400" />
+                  <RefreshCw className="w-3 h-3 text-primary" />
                   <span>Refresh</span>
                 </button>
               </div>
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[10px] text-muted-foreground">
                 Generated automatically from school initials + random identifier.
               </p>
             </div>
@@ -283,15 +283,15 @@ export default function CreateSchoolPage() {
         </div>
 
         {/* Section 2: Contact & Location */}
-        <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-          <div className="flex items-center gap-2 text-zinc-200 font-semibold text-sm border-b border-zinc-800/80 pb-3">
-            <MapPin className="w-4 h-4 text-emerald-400" />
+        <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 text-foreground font-semibold text-sm border-b border-border pb-3">
+            <MapPin className="w-4 h-4 text-emerald-500" />
             <span>2. Location & Contact Details</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div className="sm:col-span-3 space-y-1.5">
-              <label htmlFor="address" className="font-medium text-zinc-300">
+              <label htmlFor="address" className="font-medium text-foreground">
                 Street Address
               </label>
               <input
@@ -302,12 +302,12 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, address: e.target.value })
                 }
                 placeholder="e.g. 104 Campus Boulevard, Knowledge Park"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="city" className="font-medium text-zinc-300">
+              <label htmlFor="city" className="font-medium text-foreground">
                 City
               </label>
               <input
@@ -318,12 +318,12 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, city: e.target.value })
                 }
                 placeholder="e.g. Mumbai"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="state" className="font-medium text-zinc-300">
+              <label htmlFor="state" className="font-medium text-foreground">
                 State
               </label>
               <input
@@ -334,12 +334,12 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, state: e.target.value })
                 }
                 placeholder="e.g. Maharashtra"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="country" className="font-medium text-zinc-300">
+              <label htmlFor="country" className="font-medium text-foreground">
                 Country
               </label>
               <input
@@ -350,13 +350,13 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, country: e.target.value })
                 }
                 placeholder="e.g. India"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="font-medium text-zinc-300 flex items-center gap-1">
-                <Mail className="w-3 h-3 text-zinc-500" />
+              <label htmlFor="email" className="font-medium text-foreground flex items-center gap-1">
+                <Mail className="w-3 h-3 text-muted-foreground" />
                 <span>Official Email</span>
               </label>
               <input
@@ -367,13 +367,13 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 placeholder="contact@school.edu"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="phone" className="font-medium text-zinc-300 flex items-center gap-1">
-                <Phone className="w-3 h-3 text-zinc-500" />
+              <label htmlFor="phone" className="font-medium text-foreground flex items-center gap-1">
+                <Phone className="w-3 h-3 text-muted-foreground" />
                 <span>Contact Phone</span>
               </label>
               <input
@@ -384,13 +384,13 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, phone: e.target.value })
                 }
                 placeholder="+91 98765 43210"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="website" className="font-medium text-zinc-300 flex items-center gap-1">
-                <Globe className="w-3 h-3 text-zinc-500" />
+              <label htmlFor="website" className="font-medium text-foreground flex items-center gap-1">
+                <Globe className="w-3 h-3 text-muted-foreground" />
                 <span>Website URL</span>
               </label>
               <input
@@ -401,23 +401,23 @@ export default function CreateSchoolPage() {
                   setFormData({ ...formData, website: e.target.value })
                 }
                 placeholder="https://www.school.edu"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
           </div>
         </div>
 
         {/* Section 3: Subscription & Plan Tier */}
-        <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-          <div className="flex items-center gap-2 text-zinc-200 font-semibold text-sm border-b border-zinc-800/80 pb-3">
-            <Layers className="w-4 h-4 text-purple-400" />
+        <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 text-foreground font-semibold text-sm border-b border-border pb-3">
+            <Layers className="w-4 h-4 text-purple-500" />
             <span>3. Subscription & Student Capacity</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             {/* Plan Tier */}
             <div className="space-y-1.5">
-              <label htmlFor="plan" className="font-medium text-zinc-300">
+              <label htmlFor="plan" className="font-medium text-foreground">
                 Plan Tier
               </label>
               <select
@@ -428,7 +428,7 @@ export default function CreateSchoolPage() {
                     e.target.value as (typeof SCHOOL_PLANS)[number]
                   )
                 }
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground focus:outline-none"
               >
                 {SCHOOL_PLANS.map((plan) => (
                   <option key={plan} value={plan}>
@@ -440,8 +440,8 @@ export default function CreateSchoolPage() {
 
             {/* Student Limit */}
             <div className="space-y-1.5">
-              <label htmlFor="studentLimit" className="font-medium text-zinc-300 flex items-center gap-1">
-                <Users className="w-3 h-3 text-zinc-500" />
+              <label htmlFor="studentLimit" className="font-medium text-foreground flex items-center gap-1">
+                <Users className="w-3 h-3 text-muted-foreground" />
                 <span>Max Student Limit</span>
               </label>
               <input
@@ -455,14 +455,14 @@ export default function CreateSchoolPage() {
                     studentLimit: parseInt(e.target.value, 10) || 1,
                   })
                 }
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground focus:outline-none"
               />
             </div>
 
             {/* Start Date */}
             <div className="space-y-1.5">
-              <label htmlFor="subscriptionStartDate" className="font-medium text-zinc-300 flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-zinc-500" />
+              <label htmlFor="subscriptionStartDate" className="font-medium text-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-muted-foreground" />
                 <span>Start Date</span>
               </label>
               <input
@@ -475,14 +475,14 @@ export default function CreateSchoolPage() {
                     subscriptionStartDate: e.target.value,
                   })
                 }
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground focus:outline-none"
               />
             </div>
 
             {/* Expiry Date */}
             <div className="space-y-1.5">
-              <label htmlFor="subscriptionExpiryDate" className="font-medium text-zinc-300 flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-zinc-500" />
+              <label htmlFor="subscriptionExpiryDate" className="font-medium text-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-muted-foreground" />
                 <span>Expiry Date</span>
               </label>
               <input
@@ -495,20 +495,20 @@ export default function CreateSchoolPage() {
                     subscriptionExpiryDate: e.target.value,
                   })
                 }
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 text-zinc-100 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border focus:border-primary text-foreground focus:outline-none"
               />
             </div>
           </div>
         </div>
 
         {/* Section 4: Enabled Modules Configuration */}
-        <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-            <div className="flex items-center gap-2 text-zinc-200 font-semibold text-sm">
-              <CheckSquare className="w-4 h-4 text-indigo-400" />
+        <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+              <CheckSquare className="w-4 h-4 text-primary" />
               <span>4. Enabled Modules Configuration</span>
             </div>
-            <span className="text-[11px] text-zinc-400">
+            <span className="text-[11px] text-muted-foreground">
               {formData.enabledModules.length} selected
             </span>
           </div>
@@ -523,14 +523,14 @@ export default function CreateSchoolPage() {
                   onClick={() => handleModuleToggle(mod)}
                   className={`p-3 rounded-xl border text-xs text-left transition-all flex items-center gap-2 cursor-pointer ${
                     isChecked
-                      ? "bg-indigo-600/15 border-indigo-500/40 text-indigo-300 font-medium shadow-inner"
-                      : "bg-zinc-950/40 border-zinc-800/80 text-zinc-400 hover:border-zinc-700"
+                      ? "bg-primary/15 border-primary/40 text-primary font-medium shadow-inner"
+                      : "bg-surface-2 border-border text-muted-foreground hover:border-primary/40"
                   }`}
                 >
                   {isChecked ? (
-                    <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <CheckSquare className="w-4 h-4 text-primary shrink-0" />
                   ) : (
-                    <Square className="w-4 h-4 text-zinc-600 shrink-0" />
+                    <Square className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                   )}
                   <span className="truncate">{mod}</span>
                 </button>
@@ -543,14 +543,14 @@ export default function CreateSchoolPage() {
         <div className="flex items-center justify-end gap-3 pt-2">
           <Link
             href="/system-admin/schools"
-            className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 transition-all"
+            className="px-5 py-2.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-medium text-foreground transition-all border border-border shadow-sm"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+            className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{isSubmitting ? "Creating School..." : "Save & Provision School"}</span>

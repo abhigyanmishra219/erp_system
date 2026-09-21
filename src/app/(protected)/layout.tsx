@@ -19,7 +19,7 @@ export default async function ProtectedLayout({
 
   return (
     <UserProvider user={user}>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
         {children}
       </div>
     </UserProvider>

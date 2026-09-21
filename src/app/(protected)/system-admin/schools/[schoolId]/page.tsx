@@ -19,12 +19,8 @@ import {
   XCircle,
   CheckCircle2,
   AlertCircle,
-  Users,
   GraduationCap,
-  HardDrive,
   Clock,
-  ShieldCheck,
-  Building2,
   X,
   Save,
   CheckSquare,
@@ -213,21 +209,21 @@ export default function SchoolOverviewPage({
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "ACTIVE":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
       case "INACTIVE":
-        return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+        return "bg-surface-3 text-muted-foreground border-border";
       case "SUSPENDED":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+        return "bg-amber-500/10 text-amber-500 border-amber-500/20";
       default:
-        return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+        return "bg-surface-3 text-muted-foreground border-border";
     }
   };
 
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-3">
-        <SchoolIcon className="w-8 h-8 text-indigo-400 animate-bounce mx-auto" />
-        <p className="text-xs text-zinc-400">Loading school profile from MongoDB...</p>
+        <SchoolIcon className="w-8 h-8 text-primary animate-bounce mx-auto" />
+        <p className="text-xs text-muted-foreground">Loading school profile from MongoDB...</p>
       </div>
     );
   }
@@ -235,14 +231,14 @@ export default function SchoolOverviewPage({
   if (!school) {
     return (
       <div className="py-24 text-center space-y-4">
-        <AlertCircle className="w-10 h-10 text-rose-400 mx-auto" />
-        <h2 className="text-lg font-bold text-white">School Not Found</h2>
-        <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+        <AlertCircle className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-bold text-foreground">School Not Found</h2>
+        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
           The requested school does not exist or has been archived.
         </p>
         <Link
           href="/system-admin/schools"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-medium text-foreground border border-border"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Return to Schools Directory</span>
@@ -257,7 +253,7 @@ export default function SchoolOverviewPage({
       <div className="space-y-3">
         <Link
           href="/system-admin/schools"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Schools List</span>
@@ -265,14 +261,14 @@ export default function SchoolOverviewPage({
 
         {/* Feedback Toast */}
         {feedbackMessage && (
-          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-success/10 border border-success/20 text-success text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>{feedbackMessage}</span>
             </div>
             <button
               onClick={() => setFeedbackMessage(null)}
-              className="text-emerald-400 hover:text-emerald-300 font-bold"
+              className="text-success hover:opacity-80 font-bold cursor-pointer"
             >
               ×
             </button>
@@ -281,31 +277,31 @@ export default function SchoolOverviewPage({
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
               <span>{errorMessage}</span>
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="text-rose-400 hover:text-rose-300 font-bold"
+              className="text-destructive hover:opacity-80 font-bold cursor-pointer"
             >
               ×
             </button>
           </div>
         )}
 
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-zinc-900 via-indigo-950/20 to-zinc-900 border border-zinc-800/80 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="p-6 rounded-2xl bg-card border border-border shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-extrabold text-xl shrink-0 shadow-lg shadow-indigo-600/10">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-extrabold text-xl shrink-0 shadow-sm">
               {school.name[0]?.toUpperCase()}
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
                   {school.name}
                 </h1>
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-indigo-300 border border-zinc-700 font-semibold">
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-2 text-primary border border-border font-semibold">
                   {school.code}
                 </span>
                 <span
@@ -316,13 +312,13 @@ export default function SchoolOverviewPage({
                   {school.status}
                 </span>
               </div>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-muted-foreground">
                 Tenant Database Instance • Plan:{" "}
-                <span className="text-indigo-400 font-semibold">
+                <span className="text-primary font-semibold">
                   {school.plan}
                 </span>{" "}
                 • Max Students:{" "}
-                <span className="text-zinc-200 font-medium">
+                <span className="text-foreground font-medium">
                   {school.studentLimit}
                 </span>
               </p>
@@ -336,16 +332,16 @@ export default function SchoolOverviewPage({
                 setEditFormData(school);
                 setIsEditModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white transition-all flex items-center gap-1.5 border border-zinc-700/60 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-medium text-foreground transition-all flex items-center gap-1.5 border border-border cursor-pointer shadow-sm"
             >
-              <Edit className="w-3.5 h-3.5 text-indigo-400" />
+              <Edit className="w-3.5 h-3.5 text-primary" />
               <span>Edit Details</span>
             </button>
 
             {school.status !== "ACTIVE" && (
               <button
                 onClick={() => setActionType("ACTIVATE")}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Activate</span>
@@ -355,7 +351,7 @@ export default function SchoolOverviewPage({
             {school.status === "ACTIVE" && (
               <button
                 onClick={() => setActionType("DEACTIVATE")}
-                className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-all flex items-center gap-1.5 border border-zinc-700 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-muted-foreground hover:text-foreground text-xs font-medium transition-all flex items-center gap-1.5 border border-border cursor-pointer shadow-sm"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Deactivate</span>
@@ -365,7 +361,7 @@ export default function SchoolOverviewPage({
             {school.status !== "SUSPENDED" && (
               <button
                 onClick={() => setActionType("SUSPEND")}
-                className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Suspend</span>
@@ -374,7 +370,7 @@ export default function SchoolOverviewPage({
 
             <button
               onClick={() => setActionType("DELETE")}
-              className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Archive</span>
@@ -388,31 +384,31 @@ export default function SchoolOverviewPage({
         {/* Left 2 Cols: Subscription, Modules & Telemetry */}
         <div className="lg:col-span-2 space-y-6">
           {/* Subscription Card */}
-          <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-              <h3 className="font-semibold text-sm text-zinc-200 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-indigo-400" />
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
                 <span>Subscription & Billing Status</span>
               </h3>
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase">
+              <span className="px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase">
                 {school.subscriptionStatus}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-zinc-500 block">Plan Tier:</span>
-                <span className="text-sm font-bold text-zinc-200">{school.plan}</span>
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-muted-foreground block">Plan Tier:</span>
+                <span className="text-sm font-bold text-foreground">{school.plan}</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-zinc-500 block">Start Date:</span>
-                <span className="text-zinc-200 font-medium">
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-muted-foreground block">Start Date:</span>
+                <span className="text-foreground font-medium">
                   {new Date(school.subscriptionStartDate).toLocaleDateString()}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-zinc-500 block">Expiry Date:</span>
-                <span className="text-rose-400 font-medium">
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-muted-foreground block">Expiry Date:</span>
+                <span className="text-destructive font-medium">
                   {new Date(school.subscriptionExpiryDate).toLocaleDateString()}
                 </span>
               </div>
@@ -420,13 +416,13 @@ export default function SchoolOverviewPage({
           </div>
 
           {/* Enabled Modules Grid */}
-          <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-              <h3 className="font-semibold text-sm text-zinc-200 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-400" />
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                <Layers className="w-4 h-4 text-purple-500" />
                 <span>Enabled Platform Modules</span>
               </h3>
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-muted-foreground">
                 {school.enabledModules.length} Modules Active
               </span>
             </div>
@@ -435,9 +431,9 @@ export default function SchoolOverviewPage({
               {school.enabledModules.map((mod) => (
                 <div
                   key={mod}
-                  className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center gap-2 text-xs font-medium text-zinc-300"
+                  className="p-3 rounded-xl bg-surface-2 border border-border flex items-center gap-2 text-xs font-medium text-foreground"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span className="truncate">{mod}</span>
                 </div>
               ))}
@@ -445,42 +441,42 @@ export default function SchoolOverviewPage({
           </div>
 
           {/* Usage Telemetry (Live / 0 for unbuilt models) */}
-          <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-            <h3 className="font-semibold text-sm text-zinc-200 flex items-center gap-2 border-b border-zinc-800/80 pb-3">
-              <GraduationCap className="w-4 h-4 text-emerald-400" />
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+            <h3 className="font-semibold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <GraduationCap className="w-4 h-4 text-emerald-500" />
               <span>Multi-Tenant Telemetry</span>
             </h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-center">
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-2xl font-bold text-white">
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-2xl font-bold text-foreground">
                   {school.usage?.totalStudents ?? 0}
                 </span>
-                <span className="text-[11px] text-zinc-400 block">Enrolled Students</span>
-                <span className="text-[10px] text-zinc-500 font-mono">
+                <span className="text-[11px] text-muted-foreground block">Enrolled Students</span>
+                <span className="text-[10px] text-muted-foreground font-mono">
                   Limit: {school.studentLimit}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-2xl font-bold text-white">
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-2xl font-bold text-foreground">
                   {school.usage?.totalTeachers ?? 0}
                 </span>
-                <span className="text-[11px] text-zinc-400 block">Faculty Teachers</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Module Soon</span>
+                <span className="text-[11px] text-muted-foreground block">Faculty Teachers</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Module Soon</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-2xl font-bold text-white">
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-2xl font-bold text-foreground">
                   {school.usage?.totalParents ?? 0}
                 </span>
-                <span className="text-[11px] text-zinc-400 block">Parent Accounts</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Module Soon</span>
+                <span className="text-[11px] text-muted-foreground block">Parent Accounts</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Module Soon</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
-                <span className="text-2xl font-bold text-white">
+              <div className="p-3.5 rounded-xl bg-surface-2 border border-border space-y-1">
+                <span className="text-2xl font-bold text-foreground">
                   {school.usage?.storageUsedFormatted ?? "0 MB"}
                 </span>
-                <span className="text-[11px] text-zinc-400 block">Cloud Storage</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Phase 1 Default</span>
+                <span className="text-[11px] text-muted-foreground block">Cloud Storage</span>
+                <span className="text-[10px] text-muted-foreground font-mono">Phase 1 Default</span>
               </div>
             </div>
           </div>
@@ -489,21 +485,21 @@ export default function SchoolOverviewPage({
         {/* Right 1 Col: Location & Metadata Info */}
         <div className="space-y-6">
           {/* Contact Card */}
-          <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-4">
-            <h3 className="font-semibold text-sm text-zinc-200 flex items-center gap-2 border-b border-zinc-800/80 pb-3">
-              <MapPin className="w-4 h-4 text-indigo-400" />
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
+            <h3 className="font-semibold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <MapPin className="w-4 h-4 text-primary" />
               <span>Contact & Location</span>
             </h3>
 
             <div className="space-y-3 text-xs">
               <div className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-zinc-400 block">Address:</span>
-                  <span className="text-zinc-200">
+                  <span className="text-muted-foreground block">Address:</span>
+                  <span className="text-foreground">
                     {school.address || "No street address provided"}
                   </span>
-                  <span className="text-zinc-400 block text-[11px] mt-0.5">
+                  <span className="text-muted-foreground block text-[11px] mt-0.5">
                     {school.city ? `${school.city}, ` : ""}
                     {school.state ? `${school.state}, ` : ""}
                     {school.country || "India"}
@@ -511,41 +507,41 @@ export default function SchoolOverviewPage({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 pt-2 border-t border-zinc-800/60">
-                <Mail className="w-4 h-4 text-zinc-500 shrink-0" />
+              <div className="flex items-center gap-2.5 pt-2 border-t border-border">
+                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div>
-                  <span className="text-zinc-400 block">Email:</span>
-                  <span className="text-zinc-200 font-mono">
+                  <span className="text-muted-foreground block">Email:</span>
+                  <span className="text-foreground font-mono">
                     {school.email || "N/A"}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 pt-2 border-t border-zinc-800/60">
-                <Phone className="w-4 h-4 text-zinc-500 shrink-0" />
+              <div className="flex items-center gap-2.5 pt-2 border-t border-border">
+                <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div>
-                  <span className="text-zinc-400 block">Phone:</span>
-                  <span className="text-zinc-200">
+                  <span className="text-muted-foreground block">Phone:</span>
+                  <span className="text-foreground">
                     {school.phone || "N/A"}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 pt-2 border-t border-zinc-800/60">
-                <Globe className="w-4 h-4 text-zinc-500 shrink-0" />
+              <div className="flex items-center gap-2.5 pt-2 border-t border-border">
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div>
-                  <span className="text-zinc-400 block">Website:</span>
+                  <span className="text-muted-foreground block">Website:</span>
                   {school.website ? (
                     <a
                       href={school.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-indigo-400 hover:underline break-all"
+                      className="text-primary hover:underline break-all"
                     >
                       {school.website}
                     </a>
                   ) : (
-                    <span className="text-zinc-500">N/A</span>
+                    <span className="text-muted-foreground">N/A</span>
                   )}
                 </div>
               </div>
@@ -553,35 +549,35 @@ export default function SchoolOverviewPage({
           </div>
 
           {/* Metadata Card */}
-          <div className="p-6 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 space-y-3 text-xs text-zinc-400">
-            <h4 className="font-semibold text-zinc-300 flex items-center gap-2 border-b border-zinc-800/80 pb-2">
-              <Clock className="w-4 h-4 text-zinc-500" />
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-3 text-xs text-muted-foreground shadow-sm">
+            <h4 className="font-semibold text-foreground flex items-center gap-2 border-b border-border pb-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
               <span>Record Timestamps</span>
             </h4>
             <div className="flex justify-between py-1">
               <span>Database ID:</span>
-              <span className="font-mono text-zinc-500 text-[11px]">{school.id}</span>
+              <span className="font-mono text-muted-foreground text-[11px]">{school.id}</span>
             </div>
             <div className="flex justify-between py-1">
               <span>Created At:</span>
-              <span className="text-zinc-300">{new Date(school.createdAt).toLocaleString()}</span>
+              <span className="text-foreground">{new Date(school.createdAt).toLocaleString()}</span>
             </div>
             {school.createdBy && (
               <div className="flex justify-between py-1">
                 <span>Created By:</span>
-                <span className="text-zinc-300 font-medium">
+                <span className="text-foreground font-medium">
                   {school.createdBy.name || school.createdBy.email || "System Admin"}
                 </span>
               </div>
             )}
             <div className="flex justify-between py-1">
               <span>Last Modified:</span>
-              <span className="text-zinc-300">{new Date(school.updatedAt).toLocaleString()}</span>
+              <span className="text-foreground">{new Date(school.updatedAt).toLocaleString()}</span>
             </div>
             {school.updatedBy && (
               <div className="flex justify-between py-1">
                 <span>Updated By:</span>
-                <span className="text-zinc-300 font-medium">
+                <span className="text-foreground font-medium">
                   {school.updatedBy.name || school.updatedBy.email || "System Admin"}
                 </span>
               </div>
@@ -592,16 +588,16 @@ export default function SchoolOverviewPage({
 
       {/* Edit School Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-2xl w-full my-8 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Edit className="w-4 h-4 text-indigo-400" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-popover border border-border rounded-2xl p-6 max-w-2xl w-full my-8 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Edit className="w-4 h-4 text-primary" />
                 <span>Edit School Information: {school.name}</span>
               </h3>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                className="p-1 rounded-lg hover:bg-surface-2 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -610,20 +606,20 @@ export default function SchoolOverviewPage({
             <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">School Name</label>
+                  <label className="font-medium text-foreground">School Name</label>
                   <input
                     type="text"
                     value={editFormData.name || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">Plan Tier</label>
+                  <label className="font-medium text-foreground">Plan Tier</label>
                   <select
                     value={editFormData.plan || "BASIC"}
                     onChange={(e) =>
@@ -632,7 +628,7 @@ export default function SchoolOverviewPage({
                         plan: e.target.value as (typeof SCHOOL_PLANS)[number],
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   >
                     {SCHOOL_PLANS.map((p) => (
                       <option key={p} value={p}>
@@ -643,7 +639,7 @@ export default function SchoolOverviewPage({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">Max Student Limit</label>
+                  <label className="font-medium text-foreground">Max Student Limit</label>
                   <input
                     type="number"
                     min={1}
@@ -654,12 +650,12 @@ export default function SchoolOverviewPage({
                         studentLimit: parseInt(e.target.value, 10) || 1,
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">Subscription Status</label>
+                  <label className="font-medium text-foreground">Subscription Status</label>
                   <select
                     value={editFormData.subscriptionStatus || "TRIAL"}
                     onChange={(e) =>
@@ -668,7 +664,7 @@ export default function SchoolOverviewPage({
                         subscriptionStatus: e.target.value as (typeof SUBSCRIPTION_STATUSES)[number],
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   >
                     {SUBSCRIPTION_STATUSES.map((s) => (
                       <option key={s} value={s}>
@@ -679,7 +675,7 @@ export default function SchoolOverviewPage({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">Expiry Date</label>
+                  <label className="font-medium text-foreground">Expiry Date</label>
                   <input
                     type="date"
                     value={
@@ -695,50 +691,50 @@ export default function SchoolOverviewPage({
                         subscriptionExpiryDate: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">Email</label>
+                  <label className="font-medium text-foreground">Email</label>
                   <input
                     type="email"
                     value={editFormData.email || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, email: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">Phone</label>
+                  <label className="font-medium text-foreground">Phone</label>
                   <input
                     type="tel"
                     value={editFormData.phone || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, phone: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-300">City</label>
+                  <label className="font-medium text-foreground">City</label>
                   <input
                     type="text"
                     value={editFormData.city || ""}
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, city: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
 
               {/* Modules selector */}
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800">
-                <label className="font-medium text-zinc-300 block">
+              <div className="space-y-1.5 pt-2 border-t border-border">
+                <label className="font-medium text-foreground block">
                   Enabled Modules
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -751,14 +747,14 @@ export default function SchoolOverviewPage({
                         onClick={() => handleEditModuleToggle(m)}
                         className={`p-2 rounded-lg border text-left flex items-center gap-2 cursor-pointer ${
                           isChecked
-                            ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-300"
-                            : "bg-zinc-950/40 border-zinc-800 text-zinc-400"
+                            ? "bg-primary/15 border-primary/40 text-primary font-medium shadow-inner"
+                            : "bg-surface-2 border-border text-muted-foreground"
                         }`}
                       >
                         {isChecked ? (
-                          <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+                          <CheckSquare className="w-3.5 h-3.5 text-primary" />
                         ) : (
-                          <Square className="w-3.5 h-3.5 text-zinc-600" />
+                          <Square className="w-3.5 h-3.5 text-muted-foreground/60" />
                         )}
                         <span className="truncate text-[11px]">{m}</span>
                       </button>
@@ -767,18 +763,18 @@ export default function SchoolOverviewPage({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                  className="px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-foreground border border-border cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingEdit}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-600/20"
+                  className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground font-semibold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-lg shadow-primary/20"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isSubmittingEdit ? "Saving..." : "Save Changes"}</span>
@@ -791,15 +787,15 @@ export default function SchoolOverviewPage({
 
       {/* Action Confirmation Modal */}
       {actionType && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-popover border border-border rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               {actionType === "DELETE" ? (
-                <Trash2 className="w-5 h-5 text-rose-400" />
+                <Trash2 className="w-5 h-5 text-destructive" />
               ) : actionType === "SUSPEND" ? (
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
               ) : (
-                <CheckCircle className="w-5 h-5 text-indigo-400" />
+                <CheckCircle className="w-5 h-5 text-primary" />
               )}
               <span>
                 {actionType === "DELETE"
@@ -808,14 +804,14 @@ export default function SchoolOverviewPage({
                   ? "Activate School"
                   : actionType === "DEACTIVATE"
                   ? "Deactivate School"
-                  : "Suspend School"}
+                  : "Suspend School Access"}
               </span>
             </h3>
 
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {actionType === "DELETE"
-                ? `Are you sure you want to archive '${school.name}' (${school.code})? It will be safely deactivated and excluded from normal queries.`
-                : `Are you sure you want to transition '${school.name}' to ${actionType}?`}
+                ? `Are you sure you want to archive '${school.name}' (${school.code})? The school will be deactivated and hidden from standard tenant queries, preserving database integrity.`
+                : `Are you sure you want to change status of '${school.name}' (${school.code}) to ${actionType}?`}
             </p>
 
             <div className="pt-2 flex items-center justify-end gap-3">
@@ -823,7 +819,7 @@ export default function SchoolOverviewPage({
                 type="button"
                 disabled={isProcessingAction}
                 onClick={() => setActionType(null)}
-                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-xs font-medium text-foreground transition-all cursor-pointer border border-border"
               >
                 Cancel
               </button>
@@ -840,12 +836,12 @@ export default function SchoolOverviewPage({
                     );
                   }
                 }}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold text-white cursor-pointer shadow-md ${
+                className={`px-4 py-2 rounded-xl text-xs font-semibold text-white transition-all shadow-md cursor-pointer ${
                   actionType === "DELETE"
-                    ? "bg-rose-600 hover:bg-rose-500 shadow-rose-600/20"
+                    ? "bg-destructive hover:opacity-90 shadow-destructive/20"
                     : actionType === "SUSPEND"
                     ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/20"
-                    : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20"
+                    : "bg-primary hover:bg-primary-hover shadow-primary/20"
                 }`}
               >
                 {isProcessingAction ? "Processing..." : "Confirm Action"}

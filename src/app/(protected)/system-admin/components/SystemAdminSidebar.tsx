@@ -58,18 +58,18 @@ export default function SystemAdminSidebar() {
   return (
     <>
       {/* Mobile Top Navbar with hamburger */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-zinc-900 border-b border-zinc-800 z-30">
+      <div className="md:hidden flex items-center justify-between p-4 bg-sidebar border-b border-sidebar-border z-30">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
+          <div className="p-1.5 rounded-lg bg-primary text-primary-foreground shadow-sm">
             <ShieldCheck className="w-5 h-5" />
           </div>
-          <span className="font-bold text-sm tracking-tight text-white">
+          <span className="font-bold text-sm tracking-tight text-sidebar-foreground">
             ERP Platform Admin
           </span>
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+          className="p-2 rounded-lg bg-surface-2 text-muted-foreground hover:text-foreground border border-border"
           aria-label="Toggle menu"
         >
           {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -86,21 +86,21 @@ export default function SystemAdminSidebar() {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-zinc-900/90 backdrop-blur-xl border-r border-zinc-800 flex flex-col justify-between transition-transform duration-200 ease-in-out md:translate-x-0 ${
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-sidebar backdrop-blur-xl border-r border-sidebar-border flex flex-col justify-between transition-transform duration-200 ease-in-out md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="p-5 space-y-6">
           {/* Logo / Title */}
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 shadow-md shadow-indigo-600/30">
-              <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/25">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-sm text-zinc-100 leading-tight">
+              <h2 className="font-bold text-sm text-sidebar-foreground leading-tight">
                 ERP Nexus
               </h2>
-              <div className="inline-flex items-center gap-1 text-[10px] text-indigo-400 font-semibold tracking-wide uppercase">
+              <div className="inline-flex items-center gap-1 text-[10px] text-primary font-semibold tracking-wide uppercase">
                 <Sparkles className="w-2.5 h-2.5" />
                 <span>System Admin</span>
               </div>
@@ -109,7 +109,7 @@ export default function SystemAdminSidebar() {
 
           {/* Navigation Links */}
           <nav className="space-y-1">
-            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
               Platform Management
             </p>
             {NAV_ITEMS.map((item) => {
@@ -122,22 +122,22 @@ export default function SystemAdminSidebar() {
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 group ${
                     active
-                      ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 font-semibold shadow-inner"
-                      : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
+                      ? "bg-primary/10 text-primary border border-primary/20 font-semibold shadow-sm"
+                      : "text-muted-foreground hover:text-sidebar-foreground hover:bg-surface-2"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon
                       className={`w-4 h-4 transition-colors ${
                         active
-                          ? "text-indigo-400"
-                          : "text-zinc-500 group-hover:text-zinc-300"
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-sidebar-foreground"
                       }`}
                     />
                     <span>{item.label}</span>
                   </div>
                   {active && (
-                    <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />
+                    <ChevronRight className="w-3.5 h-3.5 text-primary" />
                   )}
                 </Link>
               );
@@ -146,7 +146,7 @@ export default function SystemAdminSidebar() {
 
           {/* Upcoming Phase Links (Disabled) */}
           <div className="space-y-1 pt-2">
-            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
               Future Modules
             </p>
             {COMING_SOON_ITEMS.map((item) => {
@@ -154,13 +154,13 @@ export default function SystemAdminSidebar() {
               return (
                 <div
                   key={item.label}
-                  className="flex items-center justify-between px-3 py-2 text-xs text-zinc-600 rounded-lg cursor-not-allowed select-none"
+                  className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground/60 rounded-lg cursor-not-allowed select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-zinc-600" />
+                    <Icon className="w-4 h-4 text-muted-foreground/60" />
                     <span>{item.label}</span>
                   </div>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 font-mono">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-muted-foreground font-mono border border-border">
                     Soon
                   </span>
                 </div>
@@ -170,8 +170,8 @@ export default function SystemAdminSidebar() {
         </div>
 
         {/* Footer info */}
-        <div className="p-4 border-t border-zinc-800/80 bg-zinc-950/40 text-center text-[11px] text-zinc-500 space-y-1">
-          <p className="font-mono text-zinc-400">Phase 1: Multi-Tenant Core</p>
+        <div className="p-4 border-t border-sidebar-border bg-surface-1/50 text-center text-[11px] text-muted-foreground space-y-1">
+          <p className="font-mono text-sidebar-foreground/80 font-medium">Phase 1: Multi-Tenant Core</p>
           <p className="text-[10px]">MongoDB Atlas • JWT Protected</p>
         </div>
       </aside>

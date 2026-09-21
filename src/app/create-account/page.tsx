@@ -15,8 +15,10 @@ import {
   Building2,
   AlertCircle,
   UserCheck,
+  ArrowLeft,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function CreateAccountPage() {
   const { login } = useUser();
@@ -66,12 +68,12 @@ export default function CreateAccountPage() {
 
   const strengthLabel = useMemo(() => {
     if (!password)
-      return { text: "Empty", color: "bg-zinc-700", textColor: "text-zinc-500", percent: 0 };
+      return { text: "Empty", color: "bg-surface-3", textColor: "text-muted-foreground", percent: 0 };
     if (passwordScore <= 2)
-      return { text: "Weak", color: "bg-rose-500", textColor: "text-rose-400", percent: 33 };
+      return { text: "Weak", color: "bg-destructive", textColor: "text-destructive", percent: 33 };
     if (passwordScore <= 4)
-      return { text: "Medium", color: "bg-amber-500", textColor: "text-amber-400", percent: 66 };
-    return { text: "Strong", color: "bg-emerald-500", textColor: "text-emerald-400", percent: 100 };
+      return { text: "Medium", color: "bg-amber-500", textColor: "text-amber-500", percent: 66 };
+    return { text: "Strong", color: "bg-success", textColor: "text-success", percent: 100 };
   }, [password, passwordScore]);
 
   // Passwords match validation
@@ -140,77 +142,89 @@ export default function CreateAccountPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100 p-4 sm:p-6 lg:p-8 selection:bg-indigo-500 selection:text-white overflow-hidden">
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-background text-foreground p-4 sm:p-6 lg:p-8 selection:bg-primary/30 selection:text-primary overflow-hidden">
       {/* Background ambient lighting effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-10 left-10 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative w-full max-w-lg z-10">
+      {/* Top Controls Bar */}
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 max-w-5xl mx-auto">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors bg-surface-2 px-3 py-1.5 rounded-xl border border-border shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Home</span>
+        </Link>
+        <ThemeToggle />
+      </div>
+
+      <div className="relative w-full max-w-lg z-10 my-12">
         {/* Header Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium tracking-wide uppercase mb-4 shadow-inner">
+          <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium tracking-wide uppercase mb-4 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Enterprise Resource Planning</span>
           </div>
 
           <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 shadow-lg shadow-indigo-500/25">
-              <Building2 className="w-6 h-6 text-white" />
+            <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+              <Building2 className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
               Create Your Account
             </h1>
           </div>
-          <p className="text-sm text-zinc-400">
-            Sign up to get started as a <span className="text-indigo-400 font-medium">System Admin</span>
+          <p className="text-sm text-muted-foreground">
+            Sign up to get started as a <span className="text-primary font-medium">System Admin</span>
           </p>
         </div>
 
         {/* Card Container */}
-        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 relative">
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-2xl relative backdrop-blur-xl">
           {createdUser ? (
             <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10 animate-bounce">
+              <div className="w-16 h-16 bg-success/10 border border-success/20 text-success rounded-full flex items-center justify-center mx-auto shadow-lg animate-bounce">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 Account Created & Logged In!
               </h2>
 
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 text-left space-y-2 text-xs">
-                <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
-                  <span className="text-zinc-400">Assigned Role:</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1">
+              <div className="p-4 rounded-xl bg-surface-2 border border-border text-left space-y-2 text-xs">
+                <div className="flex justify-between items-center pb-2 border-b border-border">
+                  <span className="text-muted-foreground">Assigned Role:</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-primary font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1">
                     <UserCheck className="w-3 h-3" />
                     {createdUser.role}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Email:</span>
-                  <span className="text-zinc-200 font-mono">{createdUser.email}</span>
+                  <span className="text-muted-foreground">Email:</span>
+                  <span className="text-foreground font-mono">{createdUser.email}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">User ID:</span>
-                  <span className="text-zinc-500 font-mono text-[11px]">{createdUser.id}</span>
+                  <span className="text-muted-foreground">User ID:</span>
+                  <span className="text-muted-foreground font-mono text-[11px]">{createdUser.id}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-emerald-400">
+              <p className="text-xs text-success">
                 JWT Authentication Token successfully generated & stored in UserContext.
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/dashboard"
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-medium text-white transition-all text-center shadow-lg shadow-indigo-600/20"
+                  className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-sm font-medium text-primary-foreground transition-all text-center shadow-lg shadow-primary/20"
                 >
                   Go to Protected Dashboard
                 </Link>
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-medium text-zinc-300 transition-all border border-zinc-700 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-surface-2 hover:bg-surface-3 text-sm font-medium text-foreground transition-all border border-border cursor-pointer"
                 >
                   Create Another
                 </button>
@@ -220,7 +234,7 @@ export default function CreateAccountPage() {
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
               {/* API Error Alert */}
               {apiError && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
+                <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2.5">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{apiError}</span>
                 </div>
@@ -230,12 +244,12 @@ export default function CreateAccountPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="email"
-                  className="block text-xs font-semibold uppercase tracking-wider text-zinc-300"
+                  className="block text-xs font-semibold uppercase tracking-wider text-foreground"
                 >
                   Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
@@ -245,26 +259,26 @@ export default function CreateAccountPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
                     placeholder="admin@company.com"
-                    className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-zinc-950/60 border text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all duration-200 ${
+                    className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-input border text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200 ${
                       touched.email && !isEmailValid && email.length > 0
-                        ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                        ? "border-destructive focus:ring-2 focus:ring-destructive/20"
                         : touched.email && isEmailValid
-                        ? "border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
-                        : "border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        ? "border-success focus:ring-2 focus:ring-success/20"
+                        : "border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {touched.email && email.length > 0 && (
                     <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
                       {isEmailValid ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <CheckCircle2 className="w-4 h-4 text-success" />
                       ) : (
-                        <XCircle className="w-4 h-4 text-rose-400" />
+                        <XCircle className="w-4 h-4 text-destructive" />
                       )}
                     </div>
                   )}
                 </div>
                 {touched.email && !isEmailValid && (
-                  <p className="text-xs text-rose-400">
+                  <p className="text-xs text-destructive">
                     Please enter a valid email address.
                   </p>
                 )}
@@ -275,7 +289,7 @@ export default function CreateAccountPage() {
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="password"
-                    className="block text-xs font-semibold uppercase tracking-wider text-zinc-300"
+                    className="block text-xs font-semibold uppercase tracking-wider text-foreground"
                   >
                     Password
                   </label>
@@ -286,7 +300,7 @@ export default function CreateAccountPage() {
                   )}
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
@@ -298,19 +312,19 @@ export default function CreateAccountPage() {
                       setTouched((prev) => ({ ...prev, password: true }))
                     }
                     placeholder="Create a strong password"
-                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-xl bg-zinc-950/60 border text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all duration-200 ${
+                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-xl bg-input border text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200 ${
                       touched.password && !passwordCriteria.hasMinLength
-                        ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                        ? "border-destructive focus:ring-2 focus:ring-destructive/20"
                         : touched.password && passwordCriteria.hasMinLength
-                        ? "border-zinc-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                        : "border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        ? "border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        : "border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-400 hover:text-zinc-200 transition-colors focus:outline-none cursor-pointer"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -323,20 +337,20 @@ export default function CreateAccountPage() {
                 {/* Password Strength Bar */}
                 {password.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-surface-3 rounded-full h-1.5 overflow-hidden">
                       <div
                         className={`h-full transition-all duration-300 rounded-full ${strengthLabel.color}`}
                         style={{ width: `${strengthLabel.percent}%` }}
                       />
                     </div>
                     {/* Helper checks */}
-                    <div className="grid grid-cols-2 gap-1 text-[11px] text-zinc-400 pt-1">
+                    <div className="grid grid-cols-2 gap-1 text-[11px] text-muted-foreground pt-1">
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             passwordCriteria.hasMinLength
-                              ? "bg-emerald-400"
-                              : "bg-zinc-600"
+                              ? "bg-success"
+                              : "bg-surface-3"
                           }`}
                         />
                         <span>8+ characters</span>
@@ -345,8 +359,8 @@ export default function CreateAccountPage() {
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             passwordCriteria.hasNumber
-                              ? "bg-emerald-400"
-                              : "bg-zinc-600"
+                              ? "bg-success"
+                              : "bg-surface-3"
                           }`}
                         />
                         <span>Includes number</span>
@@ -355,8 +369,8 @@ export default function CreateAccountPage() {
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             passwordCriteria.hasUpper && passwordCriteria.hasLower
-                              ? "bg-emerald-400"
-                              : "bg-zinc-600"
+                              ? "bg-success"
+                              : "bg-surface-3"
                           }`}
                         />
                         <span>Upper & lower case</span>
@@ -365,8 +379,8 @@ export default function CreateAccountPage() {
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
                             passwordCriteria.hasSpecial
-                              ? "bg-emerald-400"
-                              : "bg-zinc-600"
+                              ? "bg-success"
+                              : "bg-surface-3"
                           }`}
                         />
                         <span>Special character</span>
@@ -381,14 +395,14 @@ export default function CreateAccountPage() {
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-xs font-semibold uppercase tracking-wider text-zinc-300"
+                    className="block text-xs font-semibold uppercase tracking-wider text-foreground"
                   >
                     Confirm Password
                   </label>
                   {confirmPassword.length > 0 && (
                     <span
                       className={`text-xs font-medium flex items-center gap-1 ${
-                        passwordsMatch ? "text-emerald-400" : "text-rose-400"
+                        passwordsMatch ? "text-success" : "text-destructive"
                       }`}
                     >
                       {passwordsMatch ? (
@@ -406,7 +420,7 @@ export default function CreateAccountPage() {
                   )}
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <input
@@ -418,14 +432,14 @@ export default function CreateAccountPage() {
                       setTouched((prev) => ({ ...prev, confirmPassword: true }))
                     }
                     placeholder="Repeat your password"
-                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-xl bg-zinc-950/60 border text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all duration-200 ${
+                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-xl bg-input border text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200 ${
                       touched.confirmPassword &&
                       confirmPassword.length > 0 &&
                       !passwordsMatch
-                        ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                        ? "border-destructive focus:ring-2 focus:ring-destructive/20"
                         : confirmPassword.length > 0 && passwordsMatch
-                        ? "border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
-                        : "border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        ? "border-success focus:ring-2 focus:ring-success/20"
+                        : "border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   <button
@@ -438,7 +452,7 @@ export default function CreateAccountPage() {
                         ? "Hide confirm password"
                         : "Show confirm password"
                     }
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-400 hover:text-zinc-200 transition-colors focus:outline-none cursor-pointer"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -451,7 +465,7 @@ export default function CreateAccountPage() {
                 {touched.confirmPassword &&
                   confirmPassword.length > 0 &&
                   !passwordsMatch && (
-                    <p className="text-xs text-rose-400">
+                    <p className="text-xs text-destructive">
                       The passwords you entered do not match.
                     </p>
                   )}
@@ -464,23 +478,23 @@ export default function CreateAccountPage() {
                   type="checkbox"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/30 focus:ring-offset-zinc-900 cursor-pointer accent-indigo-500"
+                  className="mt-1 w-4 h-4 rounded border-input-border bg-input text-primary focus:ring-primary/30 cursor-pointer accent-primary"
                 />
                 <label
                   htmlFor="terms"
-                  className="text-xs text-zinc-400 leading-relaxed cursor-pointer select-none"
+                  className="text-xs text-muted-foreground leading-relaxed cursor-pointer select-none"
                 >
                   I agree to the{" "}
                   <a
                     href="#"
-                    className="text-indigo-400 hover:underline hover:text-indigo-300"
+                    className="text-primary hover:underline"
                   >
                     Terms of Service
                   </a>{" "}
                   and{" "}
                   <a
                     href="#"
-                    className="text-indigo-400 hover:underline hover:text-indigo-300"
+                    className="text-primary hover:underline"
                   >
                     Privacy Policy
                   </a>
@@ -492,15 +506,15 @@ export default function CreateAccountPage() {
               <button
                 type="submit"
                 disabled={!isFormValid || isSubmitting}
-                className={`w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg transition-all duration-200 cursor-pointer ${
+                className={`w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-md transition-all duration-200 cursor-pointer ${
                   isFormValid && !isSubmitting
-                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-indigo-500/25 active:scale-[0.99]"
-                    : "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700/50"
+                    ? "bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/25 active:scale-[0.99]"
+                    : "bg-surface-3 text-muted-foreground cursor-not-allowed border border-border"
                 }`}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full animate-spin" />
                     <span>Creating System Admin Account...</span>
                   </div>
                 ) : (
@@ -514,11 +528,11 @@ export default function CreateAccountPage() {
           )}
 
           {/* Footer Link */}
-          <div className="mt-6 pt-6 border-t border-zinc-800 text-center text-xs text-zinc-400">
+          <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline inline-flex items-center gap-1"
+              className="text-primary font-medium hover:underline inline-flex items-center gap-1"
             >
               Sign In
             </Link>

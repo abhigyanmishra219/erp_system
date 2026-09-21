@@ -21,7 +21,7 @@ export default async function SystemAdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col md:flex-row antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row antialiased selection:bg-primary/30 selection:text-primary">
       {/* Sidebar Navigation */}
       <SystemAdminSidebar />
 

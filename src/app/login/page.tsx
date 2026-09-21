@@ -13,8 +13,10 @@ import {
   Building2,
   AlertCircle,
   CheckCircle2,
+  ArrowLeft,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,42 +76,54 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100 p-4 sm:p-6 lg:p-8 selection:bg-indigo-500 selection:text-white overflow-hidden">
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-background text-foreground p-4 sm:p-6 lg:p-8 selection:bg-primary/30 selection:text-primary overflow-hidden">
       {/* Background ambient lighting effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-10 left-10 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative w-full max-w-md z-10">
+      {/* Top Controls Bar */}
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 max-w-5xl mx-auto">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors bg-surface-2 px-3 py-1.5 rounded-xl border border-border shadow-sm"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Home</span>
+        </Link>
+        <ThemeToggle />
+      </div>
+
+      <div className="relative w-full max-w-md z-10 my-12">
         {/* Header Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium tracking-wide uppercase mb-4 shadow-inner">
+          <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium tracking-wide uppercase mb-4 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Enterprise Resource Planning</span>
           </div>
 
           <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 shadow-lg shadow-indigo-500/25">
-              <Building2 className="w-6 h-6 text-white" />
+            <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+              <Building2 className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
               Welcome Back
             </h1>
           </div>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Sign in to access your ERP portal and workspace
           </p>
         </div>
 
         {/* Card Container */}
-        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 relative">
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-2xl relative backdrop-blur-xl">
           {isSuccess ? (
             <div className="text-center py-6 space-y-3">
-              <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10 animate-bounce">
+              <div className="w-14 h-14 bg-success/10 border border-success/20 text-success rounded-full flex items-center justify-center mx-auto shadow-lg animate-bounce">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
-              <h2 className="text-lg font-bold text-white">Login Successful!</h2>
-              <p className="text-xs text-zinc-400">
+              <h2 className="text-lg font-bold text-foreground">Login Successful!</h2>
+              <p className="text-xs text-muted-foreground">
                 Redirecting you to your ERP dashboard...
               </p>
             </div>
@@ -117,7 +131,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
               {/* Error Alert */}
               {errorMsg && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
+                <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2.5">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
@@ -127,12 +141,12 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="identifier"
-                  className="block text-xs font-semibold uppercase tracking-wider text-zinc-300"
+                  className="block text-xs font-semibold uppercase tracking-wider text-foreground"
                 >
                   ID or Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
                     <UserIcon className="w-4 h-4" />
                   </div>
                   <input
@@ -142,7 +156,7 @@ export default function LoginPage() {
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder="Enter your ID or email"
                     required
-                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all duration-200"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-input border border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200"
                   />
                 </div>
               </div>
@@ -152,19 +166,19 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="password"
-                    className="block text-xs font-semibold uppercase tracking-wider text-zinc-300"
+                    className="block text-xs font-semibold uppercase tracking-wider text-foreground"
                   >
                     Password
                   </label>
                   <a
                     href="#"
-                    className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline"
+                    className="text-xs text-primary hover:underline"
                   >
                     Forgot password?
                   </a>
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
@@ -174,14 +188,14 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full pl-10 pr-11 py-2.5 text-sm rounded-xl bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all duration-200"
+                    className="w-full pl-10 pr-11 py-2.5 text-sm rounded-xl bg-input border border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200"
                   />
                   {/* Eye Icon Visibility Toggle */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-400 hover:text-zinc-200 transition-colors focus:outline-none cursor-pointer"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors focus:outline-none cursor-pointer"
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -196,14 +210,14 @@ export default function LoginPage() {
               <div className="flex items-center justify-between pt-1">
                 <label
                   htmlFor="rememberMe"
-                  className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer select-none"
+                  className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none"
                 >
                   <input
                     id="rememberMe"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/30 focus:ring-offset-zinc-900 cursor-pointer accent-indigo-500"
+                    className="w-4 h-4 rounded border-input-border bg-input text-primary focus:ring-primary/30 cursor-pointer accent-primary"
                   />
                   <span>Remember my session</span>
                 </label>
@@ -213,15 +227,15 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || !identifier.trim() || !password}
-                className={`w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-lg transition-all duration-200 cursor-pointer ${
+                className={`w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-md transition-all duration-200 cursor-pointer ${
                   identifier.trim() && password && !isSubmitting
-                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-indigo-500/25 active:scale-[0.99]"
-                    : "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700/50"
+                    ? "bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/25 active:scale-[0.99]"
+                    : "bg-surface-3 text-muted-foreground cursor-not-allowed border border-border"
                 }`}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full animate-spin" />
                     <span>Signing in...</span>
                   </div>
                 ) : (
@@ -235,11 +249,11 @@ export default function LoginPage() {
           )}
 
           {/* Footer Navigation */}
-          <div className="mt-6 pt-6 border-t border-zinc-800 text-center text-xs text-zinc-400">
+          <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
             Don&apos;t have an account yet?{" "}
             <Link
               href="/create-account"
-              className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline inline-flex items-center gap-1"
+              className="text-primary font-medium hover:underline inline-flex items-center gap-1"
             >
               Create Account
             </Link>
