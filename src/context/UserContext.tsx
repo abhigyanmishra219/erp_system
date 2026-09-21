@@ -14,6 +14,8 @@ export interface UserDetails {
   email: string;
   name?: string;
   role: UserRole;
+  schoolId?: string | null;
+  mustChangePassword?: boolean;
 }
 
 interface UserContextType {

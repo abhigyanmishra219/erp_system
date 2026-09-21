@@ -9,6 +9,8 @@ export interface AuthenticatedUserDoc {
   email: string;
   name?: string;
   role: UserRole;
+  schoolId?: string | null;
+  mustChangePassword?: boolean;
   isActive: boolean;
 }
 
@@ -43,6 +45,8 @@ export async function getUserFromCookies(): Promise<AuthenticatedUserDoc | null>
       email: userDoc.email,
       name: userDoc.name,
       role: userDoc.role as UserRole,
+      schoolId: userDoc.schoolId ? userDoc.schoolId.toString() : null,
+      mustChangePassword: !!userDoc.mustChangePassword,
       isActive: userDoc.isActive,
     };
   } catch (error: unknown) {

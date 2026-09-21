@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import { requireSystemAdmin } from "@/lib/auth/requireSystemAdmin";
 import connectToDatabase from "@/lib/db";
 import School from "@/models/School";
+import User from "@/models/User";
 import {
   createSchoolSchema,
   schoolQuerySchema,
 } from "@/lib/validation/school";
 import { generateUniqueSchoolCode } from "@/lib/schoolCode";
+import { generateTemporaryPassword } from "@/lib/tempPassword";
 import { createAuditLog } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
@@ -59,7 +63,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      const searchRegex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      const searchRegex = new RegExp(
+        search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i"
+      );
       filter.$or = [
         { name: searchRegex },
         { code: searchRegex },
@@ -158,10 +165,26 @@ export async function POST(req: NextRequest) {
     }
 
     const validatedData = parseResult.data;
+    const normalizedAdminEmail = validatedData.schoolAdminEmail.trim().toLowerCase();
 
     await connectToDatabase();
 
-    // Auto-generate or ensure unique school code
+    // 1. Check whether School Admin email already exists in User collection
+    const existingUser = await User.findOne({ email: normalizedAdminEmail });
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "DUPLICATE_EMAIL",
+            message: `An account with email '${normalizedAdminEmail}' already exists. Please choose a different school admin email address.`,
+          },
+        },
+        { status: 409 }
+      );
+    }
+
+    // 2. Auto-generate or ensure unique school code
     let finalCode = validatedData.code;
     if (!finalCode || !finalCode.trim()) {
       finalCode = await generateUniqueSchoolCode(validatedData.name);
@@ -194,46 +217,183 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create the new school document
-    const newSchool = await School.create({
-      ...validatedData,
-      code: finalCode,
-      isDeleted: false,
-      deletedAt: null,
-      createdBy: auth.user.id,
-      updatedBy: auth.user.id,
-    });
+    // 3. Generate cryptographic temporary password and hash it
+    const temporaryPassword = generateTemporaryPassword();
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-    // Record audit log entry
+    // Extract school fields (excluding schoolAdminEmail)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { schoolAdminEmail: _, ...schoolFields } = validatedData;
+
+    // 4. Atomic Execution: Attempt transaction with fallback rollback strategy
+    let createdSchoolId: mongoose.Types.ObjectId | null = null;
+    let createdUserId: mongoose.Types.ObjectId | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let newSchoolDoc: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let newAdminDoc: any = null;
+
+    const useTransaction = mongoose.connection.readyState === 1 && typeof mongoose.connection.startSession === "function";
+    let session: mongoose.ClientSession | null = null;
+
+    try {
+      if (useTransaction) {
+        try {
+          session = await mongoose.startSession();
+          session.startTransaction();
+        } catch {
+          session = null;
+        }
+      }
+
+      const sessionOpts = session ? { session } : {};
+
+      // A. Create the School document
+      const schoolDocs = await School.create(
+        [
+          {
+            ...schoolFields,
+            code: finalCode,
+            isDeleted: false,
+            deletedAt: null,
+            createdBy: auth.user.id,
+            updatedBy: auth.user.id,
+          },
+        ],
+        sessionOpts
+      );
+      newSchoolDoc = schoolDocs[0];
+      createdSchoolId = newSchoolDoc._id;
+
+      // B. Create the School Admin User document with STRICT server-controlled properties
+      const adminDocs = await User.create(
+        [
+          {
+            name: `${validatedData.name} Administrator`,
+            email: normalizedAdminEmail,
+            password: hashedPassword,
+            role: "ADMIN", // STRICT HARDCODED SERVER ENFORCEMENT
+            schoolId: newSchoolDoc._id,
+            isActive: true,
+            mustChangePassword: true,
+          },
+        ],
+        sessionOpts
+      );
+      newAdminDoc = adminDocs[0];
+      createdUserId = newAdminDoc._id;
+
+      // C. Post-Creation Security Verification
+      const roleIsAdmin = String(newAdminDoc.role) === "ADMIN";
+      const hasSchoolId = Boolean(newAdminDoc.schoolId);
+      const schoolIdMatches =
+        hasSchoolId && String(newAdminDoc.schoolId) === String(newSchoolDoc._id);
+
+      if (!roleIsAdmin || !hasSchoolId || !schoolIdMatches) {
+        // Safe diagnostic logging (NO PASSWORDS, SECRETS, OR HASHES)
+        console.error("School onboarding security verification failed:", {
+          adminUserId: newAdminDoc._id?.toString(),
+          adminRole: newAdminDoc.role,
+          adminSchoolId: newAdminDoc.schoolId?.toString(),
+          createdSchoolId: newSchoolDoc._id?.toString(),
+          roleIsAdmin,
+          hasSchoolId,
+          schoolIdMatches,
+        });
+
+        throw new Error(
+          "Security constraint violation: School Admin role must be 'ADMIN' and associated with created school."
+        );
+      }
+
+      // D. Commit transaction if active
+      if (session) {
+        await session.commitTransaction();
+      }
+    } catch (creationError) {
+      if (session) {
+        try {
+          await session.abortTransaction();
+        } catch {
+          // session abort ignore
+        }
+      } else {
+        // Fallback standalone rollback: clean up partially created resources
+        if (createdSchoolId) {
+          try {
+            await School.findByIdAndDelete(createdSchoolId);
+          } catch (cleanupErr) {
+            console.error("Rollback error deleting school:", cleanupErr);
+          }
+        }
+        if (createdUserId) {
+          try {
+            await User.findByIdAndDelete(createdUserId);
+          } catch (cleanupErr) {
+            console.error("Rollback error deleting user:", cleanupErr);
+          }
+        }
+      }
+      throw creationError;
+    } finally {
+      if (session) {
+        await session.endSession();
+      }
+    }
+
+    // 5. Record audit logs (non-blocking, sanitizes metadata without sensitive info)
     await createAuditLog({
       userId: auth.user.id,
       userRole: auth.user.role,
       action: "SCHOOL_CREATED",
       entityType: "SCHOOL",
-      entityId: newSchool._id.toString(),
-      schoolId: newSchool._id.toString(),
+      entityId: newSchoolDoc._id.toString(),
+      schoolId: newSchoolDoc._id.toString(),
       metadata: {
-        name: newSchool.name,
-        code: newSchool.code,
-        plan: newSchool.plan,
-        studentLimit: newSchool.studentLimit,
+        name: newSchoolDoc.name,
+        code: newSchoolDoc.code,
+        plan: newSchoolDoc.plan,
+        studentLimit: newSchoolDoc.studentLimit,
       },
     });
 
+    await createAuditLog({
+      userId: auth.user.id,
+      userRole: auth.user.role,
+      action: "USER_CREATED",
+      entityType: "USER",
+      entityId: newAdminDoc._id.toString(),
+      schoolId: newSchoolDoc._id.toString(),
+      metadata: {
+        email: newAdminDoc.email,
+        role: newAdminDoc.role,
+        assignedSchoolId: newSchoolDoc._id.toString(),
+      },
+    });
+
+    // 6. Return response containing temporary credentials ONLY to the authenticated SYSTEM_ADMIN
     return NextResponse.json(
       {
         success: true,
-        message: "School created successfully",
+        message: "School and School Administrator created successfully",
         data: {
-          id: newSchool._id.toString(),
-          name: newSchool.name,
-          code: newSchool.code,
-          plan: newSchool.plan,
-          status: newSchool.status,
-          subscriptionStatus: newSchool.subscriptionStatus,
-          studentLimit: newSchool.studentLimit,
-          enabledModules: newSchool.enabledModules,
-          createdAt: newSchool.createdAt,
+          school: {
+            id: newSchoolDoc._id.toString(),
+            name: newSchoolDoc.name,
+            code: newSchoolDoc.code,
+            plan: newSchoolDoc.plan,
+            status: newSchoolDoc.status,
+            subscriptionStatus: newSchoolDoc.subscriptionStatus,
+            studentLimit: newSchoolDoc.studentLimit,
+            enabledModules: newSchoolDoc.enabledModules,
+            createdAt: newSchoolDoc.createdAt,
+          },
+          schoolAdmin: {
+            id: newAdminDoc._id.toString(),
+            email: newAdminDoc.email,
+            role: "ADMIN",
+          },
+          temporaryPassword,
         },
       },
       { status: 201 }
@@ -247,7 +407,7 @@ export async function POST(req: NextRequest) {
           success: false,
           error: {
             code: "DUPLICATE_KEY",
-            message: "Duplicate key error: School code must be unique.",
+            message: "A unique constraint violation occurred (duplicate email or code).",
           },
         },
         { status: 409 }

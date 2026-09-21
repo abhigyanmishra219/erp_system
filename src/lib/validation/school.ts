@@ -43,6 +43,12 @@ export const createSchoolSchema = z.object({
     .transform((val) => val.toUpperCase())
     .optional()
     .or(z.literal("")),
+  schoolAdminEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, "School Administrator Email is required")
+    .email("Please provide a valid School Administrator email address"),
   address: z.string().trim().optional().default(""),
   city: z.string().trim().optional().default(""),
   state: z.string().trim().optional().default(""),
@@ -82,7 +88,7 @@ export const createSchoolSchema = z.object({
 
 export const updateSchoolSchema = createSchoolSchema
   .partial()
-  .omit({ code: true }); // School code is protected from casual changes
+  .omit({ code: true, schoolAdminEmail: true }); // School code & Admin email are protected from casual school detail updates
 
 export const updateSchoolStatusSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]),

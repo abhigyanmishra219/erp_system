@@ -8,6 +8,8 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   role: UserRole;
+  schoolId?: mongoose.Types.ObjectId | string | null;
+  mustChangePassword: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -40,6 +42,16 @@ const UserSchema = new Schema<IUser>(
       default: "SYSTEM_ADMIN",
       required: true,
     },
+    schoolId: {
+      type: Schema.Types.ObjectId,
+      ref: "School",
+      default: null,
+      index: true,
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -51,7 +63,22 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Prevent mongoose model overwrite error during Next.js hot reload
+if (mongoose.models && mongoose.models.User) {
+  const existingModel = mongoose.models.User as Model<IUser>;
+  // Re-register if schema paths for schoolId or mustChangePassword are missing
+  if (
+    !existingModel.schema ||
+    !existingModel.schema.paths ||
+    !existingModel.schema.paths.schoolId ||
+    !existingModel.schema.paths.mustChangePassword
+  ) {
+    delete (mongoose.models as Record<string, unknown>).User;
+  }
+}
+
 const User: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+  (mongoose.models && (mongoose.models.User as Model<IUser>)) ||
+  mongoose.model<IUser>("User", UserSchema);
 
 export default User;
+

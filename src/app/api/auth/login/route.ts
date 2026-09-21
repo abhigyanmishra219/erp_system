@@ -71,6 +71,8 @@ export async function POST(req: NextRequest) {
           email: user.email,
           name: user.name,
           role: user.role,
+          schoolId: user.schoolId ? user.schoolId.toString() : null,
+          mustChangePassword: !!user.mustChangePassword,
         },
         token,
       },
