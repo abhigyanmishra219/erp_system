@@ -21,7 +21,7 @@ export interface ISchool extends Document {
   email?: string;
   logo?: string;
   website?: string;
-  plan: SchoolPlan;
+  plan: string;
   studentLimit: number;
   subscriptionStartDate: Date;
   subscriptionExpiryDate: Date;
@@ -94,8 +94,10 @@ const SchoolSchema = new Schema<ISchool>(
     },
     plan: {
       type: String,
-      enum: SCHOOL_PLANS,
+      required: true,
       default: "BASIC",
+      uppercase: true,
+      trim: true,
       index: true,
     },
     studentLimit: {
@@ -165,6 +167,7 @@ SchoolSchema.index({ isDeleted: 1, status: 1, plan: 1 });
 SchoolSchema.index({ isDeleted: 1, createdAt: -1 });
 
 const School: Model<ISchool> =
-  mongoose.models.School || mongoose.model<ISchool>("School", SchoolSchema);
+  (mongoose.models && (mongoose.models.School as Model<ISchool>)) ||
+  mongoose.model<ISchool>("School", SchoolSchema);
 
 export default School;

@@ -1,24 +1,13 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 import { UserRole, USER_ROLES } from "@/lib/constants/roles";
-
-export const AUDIT_ACTIONS = [
-  "SCHOOL_CREATED",
-  "SCHOOL_UPDATED",
-  "SCHOOL_STATUS_CHANGED",
-  "SCHOOL_DELETED",
-  "USER_CREATED",
-  "USER_UPDATED",
-  "USER_STATUS_CHANGED",
-  "PLATFORM_SETTINGS_CHANGED",
-] as const;
-
-export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+import { AUDIT_ACTIONS, AuditAction } from "@/lib/constants/audit";
+export { AUDIT_ACTIONS, type AuditAction };
 
 export interface IAuditLog extends Document {
   userId: mongoose.Types.ObjectId | string;
   userRole: UserRole;
   action: AuditAction | string;
-  entityType: "SCHOOL" | "USER" | "PLATFORM" | string;
+  entityType: "SCHOOL" | "USER" | "PLAN" | "SUBSCRIPTION" | "PLATFORM" | string;
   entityId?: string | null;
   schoolId?: mongoose.Types.ObjectId | string | null;
   metadata?: Record<string, unknown>;
@@ -77,8 +66,11 @@ const AuditLogSchema = new Schema<IAuditLog>(
 // Compound index for timeline queries
 AuditLogSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
 AuditLogSchema.index({ schoolId: 1, createdAt: -1 });
+AuditLogSchema.index({ action: 1, createdAt: -1 });
+AuditLogSchema.index({ createdAt: -1 });
 
 const AuditLog: Model<IAuditLog> =
-  mongoose.models.AuditLog || mongoose.model<IAuditLog>("AuditLog", AuditLogSchema);
+  (mongoose.models && (mongoose.models.AuditLog as Model<IAuditLog>)) ||
+  mongoose.model<IAuditLog>("AuditLog", AuditLogSchema);
 
 export default AuditLog;

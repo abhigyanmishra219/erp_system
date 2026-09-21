@@ -62,7 +62,7 @@ export const createSchoolSchema = z.object({
     .or(z.literal("")),
   logo: z.string().trim().optional().default(""),
   website: z.string().trim().optional().default(""),
-  plan: z.enum(SCHOOL_PLANS).default("BASIC"),
+  plan: z.string().trim().toUpperCase().min(2, "Plan code is required").default("BASIC"),
   studentLimit: z.coerce.number().int().min(1, "Student limit must be at least 1").default(200),
   subscriptionStartDate: z
     .string()
@@ -99,7 +99,7 @@ export const schoolQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().trim().optional().default(""),
   status: z.enum(["ALL", "ACTIVE", "INACTIVE", "SUSPENDED"]).default("ALL"),
-  plan: z.enum(["ALL", "BASIC", "STANDARD", "PROFESSIONAL", "ENTERPRISE"]).default("ALL"),
+  plan: z.string().trim().toUpperCase().default("ALL"),
   sortBy: z.enum(["createdAt", "name", "code", "studentLimit"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });

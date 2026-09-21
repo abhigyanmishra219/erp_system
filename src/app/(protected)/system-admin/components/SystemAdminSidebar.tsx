@@ -10,6 +10,7 @@ import {
   CreditCard,
   Layers,
   History,
+  Activity,
   ShieldCheck,
   Menu,
   X,
@@ -36,12 +37,30 @@ const NAV_ITEMS = [
     icon: Users,
     activeExact: false,
   },
-];
-
-const COMING_SOON_ITEMS = [
-  { label: "Plans & Pricing", icon: Layers },
-  { label: "Subscriptions", icon: CreditCard },
-  { label: "Audit Logs", icon: History },
+  {
+    label: "Plans & Limits",
+    href: "/system-admin/plans",
+    icon: Layers,
+    activeExact: false,
+  },
+  {
+    label: "Subscriptions",
+    href: "/system-admin/subscriptions",
+    icon: CreditCard,
+    activeExact: false,
+  },
+  {
+    label: "Audit Logs",
+    href: "/system-admin/audit-logs",
+    icon: History,
+    activeExact: false,
+  },
+  {
+    label: "System Monitoring",
+    href: "/system-admin/monitoring",
+    icon: Activity,
+    activeExact: false,
+  },
 ];
 
 export default function SystemAdminSidebar() {
@@ -143,30 +162,6 @@ export default function SystemAdminSidebar() {
               );
             })}
           </nav>
-
-          {/* Upcoming Phase Links (Disabled) */}
-          <div className="space-y-1 pt-2">
-            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-              Future Modules
-            </p>
-            {COMING_SOON_ITEMS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground/60 rounded-lg cursor-not-allowed select-none"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-muted-foreground/60" />
-                    <span>{item.label}</span>
-                  </div>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-2 text-muted-foreground font-mono border border-border">
-                    Soon
-                  </span>
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         {/* Footer info */}

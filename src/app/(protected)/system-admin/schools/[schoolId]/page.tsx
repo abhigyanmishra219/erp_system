@@ -30,6 +30,8 @@ import {
   SCHOOL_PLANS,
   SUBSCRIPTION_STATUSES,
   SCHOOL_MODULES,
+  SchoolPlan,
+  SubscriptionStatus,
   SchoolModule,
 } from "@/lib/validation/school";
 
@@ -84,6 +86,18 @@ export default function SchoolOverviewPage({
   const [editFormData, setEditFormData] = useState<Partial<SchoolDetails>>({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
+  // Subscription Edit Modal State
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  const [subFormData, setSubFormData] = useState({
+    plan: "BASIC" as SchoolPlan,
+    studentLimit: 200,
+    subscriptionStartDate: "",
+    subscriptionExpiryDate: "",
+    subscriptionStatus: "TRIAL" as SubscriptionStatus,
+    enabledModules: [] as SchoolModule[],
+  });
+  const [isSubmittingSub, setIsSubmittingSub] = useState(false);
+
   // Delete / Status Action Confirmation Modal
   const [actionType, setActionType] = useState<
     "ACTIVATE" | "DEACTIVATE" | "SUSPEND" | "DELETE" | null
@@ -103,6 +117,20 @@ export default function SchoolOverviewPage({
 
       setSchool(json.data);
       setEditFormData(json.data);
+      if (json.data) {
+        setSubFormData({
+          plan: json.data.plan || "BASIC",
+          studentLimit: json.data.studentLimit || 200,
+          subscriptionStartDate: json.data.subscriptionStartDate
+            ? new Date(json.data.subscriptionStartDate).toISOString().split("T")[0]
+            : "",
+          subscriptionExpiryDate: json.data.subscriptionExpiryDate
+            ? new Date(json.data.subscriptionExpiryDate).toISOString().split("T")[0]
+            : "",
+          subscriptionStatus: json.data.subscriptionStatus || "TRIAL",
+          enabledModules: json.data.enabledModules || [],
+        });
+      }
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error ? err.message : "Error fetching school details"
@@ -115,6 +143,46 @@ export default function SchoolOverviewPage({
   useEffect(() => {
     fetchSchoolDetails();
   }, [fetchSchoolDetails]);
+
+  const handleSubscriptionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingSub(true);
+    try {
+      const res = await fetch(`/api/system-admin/schools/${schoolId}/subscription`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subFormData),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Failed to update subscription");
+      }
+
+      setFeedbackMessage("Subscription and license updated successfully!");
+      setIsSubModalOpen(false);
+      fetchSchoolDetails();
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Error updating subscription"
+      );
+    } finally {
+      setIsSubmittingSub(false);
+    }
+  };
+
+  const handleSubModuleToggle = (mod: SchoolModule) => {
+    setSubFormData((prev) => {
+      const current = prev.enabledModules || [];
+      const exists = current.includes(mod);
+      return {
+        ...prev,
+        enabledModules: exists
+          ? current.filter((m) => m !== mod)
+          : [...current, mod],
+      };
+    });
+  };
 
   const handleStatusChange = async (
     newStatus: "ACTIVE" | "INACTIVE" | "SUSPENDED"
@@ -390,9 +458,18 @@ export default function SchoolOverviewPage({
                 <Calendar className="w-4 h-4 text-primary" />
                 <span>Subscription & Billing Status</span>
               </h3>
-              <span className="px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase">
-                {school.subscriptionStatus}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase">
+                  {school.subscriptionStatus}
+                </span>
+                <button
+                  onClick={() => setIsSubModalOpen(true)}
+                  className="px-3 py-1 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border text-foreground text-xs font-medium transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                >
+                  <Edit className="w-3 h-3 text-primary" />
+                  <span>Manage License</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -778,6 +855,167 @@ export default function SchoolOverviewPage({
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isSubmittingEdit ? "Saving..." : "Save Changes"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Subscription / License Modal */}
+      {isSubModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-popover border border-border rounded-2xl p-6 max-w-xl w-full my-8 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                <span>Manage Subscription: {school.name}</span>
+              </h3>
+              <button
+                onClick={() => setIsSubModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-surface-2 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubscriptionSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-medium text-foreground">Plan Tier</label>
+                  <select
+                    value={subFormData.plan}
+                    onChange={(e) =>
+                      setSubFormData({
+                        ...subFormData,
+                        plan: e.target.value as SchoolPlan,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
+                  >
+                    {SCHOOL_PLANS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-medium text-foreground">Subscription Status</label>
+                  <select
+                    value={subFormData.subscriptionStatus}
+                    onChange={(e) =>
+                      setSubFormData({
+                        ...subFormData,
+                        subscriptionStatus: e.target.value as SubscriptionStatus,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
+                  >
+                    {SUBSCRIPTION_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-medium text-foreground">Start Date</label>
+                  <input
+                    type="date"
+                    value={subFormData.subscriptionStartDate}
+                    onChange={(e) =>
+                      setSubFormData({
+                        ...subFormData,
+                        subscriptionStartDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
+                  >
+                  </input>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-medium text-foreground">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={subFormData.subscriptionExpiryDate}
+                    onChange={(e) =>
+                      setSubFormData({
+                        ...subFormData,
+                        subscriptionExpiryDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
+                  >
+                  </input>
+                </div>
+
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="font-medium text-foreground">Student Capacity Limit</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={subFormData.studentLimit}
+                    onChange={(e) =>
+                      setSubFormData({
+                        ...subFormData,
+                        studentLimit: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Modules selector */}
+              <div className="space-y-1.5 pt-2 border-t border-border">
+                <label className="font-medium text-foreground block">
+                  Enabled Feature Modules ({subFormData.enabledModules.length})
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {SCHOOL_MODULES.map((m) => {
+                    const isChecked = subFormData.enabledModules?.includes(m);
+                    return (
+                      <button
+                        type="button"
+                        key={m}
+                        onClick={() => handleSubModuleToggle(m)}
+                        className={`p-2 rounded-lg border text-left flex items-center gap-2 cursor-pointer ${
+                          isChecked
+                            ? "bg-primary/15 border-primary/40 text-primary font-medium shadow-inner"
+                            : "bg-surface-2 border-border text-muted-foreground"
+                        }`}
+                      >
+                        {isChecked ? (
+                          <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                        ) : (
+                          <Square className="w-3.5 h-3.5 text-muted-foreground/60" />
+                        )}
+                        <span className="truncate text-[11px]">{m}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsSubModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-foreground border border-border cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingSub}
+                  className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground font-semibold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-lg shadow-primary/20"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSubmittingSub ? "Updating..." : "Update Subscription"}</span>
                 </button>
               </div>
             </form>
