@@ -10,6 +10,39 @@ import {
   SchoolModule,
 } from "@/lib/validation/school";
 
+export interface ISchoolBranding {
+  logo?: string;
+  favicon?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+export interface IGradingScale {
+  grade: string;
+  minPercentage: number;
+  maxPercentage: number;
+  gradePoint?: number;
+  description?: string;
+}
+
+export interface IGradingSettings {
+  gradingType: "PERCENTAGE" | "GRADE_POINT";
+  scales: IGradingScale[];
+}
+
+export interface IAttendanceSettings {
+  attendanceTypes: string[];
+  workingDays: string[];
+}
+
+export interface IFeeSettings {
+  categories: string[];
+  paymentFrequencies: string[];
+  lateFeeGraceDays: number;
+  lateFeeFineAmount: number;
+  lateFeeType: "FIXED" | "PERCENTAGE";
+}
+
 export interface ISchool extends Document {
   name: string;
   code: string;
@@ -21,6 +54,10 @@ export interface ISchool extends Document {
   email?: string;
   logo?: string;
   website?: string;
+  branding?: ISchoolBranding;
+  gradingSettings?: IGradingSettings;
+  attendanceSettings?: IAttendanceSettings;
+  feeSettings?: IFeeSettings;
   plan: string;
   studentLimit: number;
   subscriptionStartDate: Date;
@@ -91,6 +128,61 @@ const SchoolSchema = new Schema<ISchool>(
       type: String,
       trim: true,
       default: "",
+    },
+    branding: {
+      logo: { type: String, trim: true, default: "" },
+      favicon: { type: String, trim: true, default: "" },
+      primaryColor: { type: String, trim: true, default: "" },
+      secondaryColor: { type: String, trim: true, default: "" },
+    },
+    gradingSettings: {
+      gradingType: {
+        type: String,
+        enum: ["PERCENTAGE", "GRADE_POINT"],
+        default: "PERCENTAGE",
+      },
+      scales: [
+        {
+          grade: { type: String, required: true },
+          minPercentage: { type: Number, required: true },
+          maxPercentage: { type: Number, required: true },
+          gradePoint: { type: Number },
+          description: { type: String, default: "" },
+        },
+      ],
+    },
+    attendanceSettings: {
+      attendanceTypes: {
+        type: [String],
+        default: ["PRESENT", "ABSENT", "LATE", "LEAVE"],
+      },
+      workingDays: {
+        type: [String],
+        default: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      },
+    },
+    feeSettings: {
+      categories: {
+        type: [String],
+        default: ["Tuition Fee", "Admission Fee", "Examination Fee", "Library Fee", "Transport Fee"],
+      },
+      paymentFrequencies: {
+        type: [String],
+        default: ["MONTHLY", "QUARTERLY", "ANNUALLY"],
+      },
+      lateFeeGraceDays: {
+        type: Number,
+        default: 7,
+      },
+      lateFeeFineAmount: {
+        type: Number,
+        default: 100,
+      },
+      lateFeeType: {
+        type: String,
+        enum: ["FIXED", "PERCENTAGE"],
+        default: "FIXED",
+      },
     },
     plan: {
       type: String,

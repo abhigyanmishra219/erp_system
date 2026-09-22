@@ -133,11 +133,11 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : user?.role === "ADMIN" ? (
-          <div className="p-6 rounded-2xl bg-card border border-indigo-500/40 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-6 rounded-2xl bg-card border border-primary/40 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5 relative z-10">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 text-[10px] font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-wider">
                 <Sparkles className="w-3 h-3" />
-                <span>School Administrator Portal</span>
+                <span>School Administrator Portal Active</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
                 Institution Management Workspace
@@ -147,10 +147,14 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="px-4 py-2 rounded-xl bg-surface-2 border border-border text-xs font-semibold text-foreground flex items-center gap-2">
-              <School className="w-4 h-4 text-indigo-500" />
-              <span>Tenant Instance Linked</span>
-            </div>
+            <Link
+              href="/admin"
+              className="px-5 py-3 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Enter School Admin Portal</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         ) : null}
 
