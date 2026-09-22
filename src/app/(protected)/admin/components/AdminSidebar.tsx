@@ -106,25 +106,26 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Attendance",
         href: "/admin/attendance",
         icon: CalendarCheck,
-        isComingSoon: true,
       },
       {
         label: "Assignments",
         href: "/admin/assignments",
         icon: FileText,
-        isComingSoon: true,
       },
       {
         label: "Study Material",
         href: "/admin/study-material",
         icon: BookOpen,
-        isComingSoon: true,
       },
       {
-        label: "Exams & Results",
+        label: "Exams",
         href: "/admin/exams",
         icon: Award,
-        isComingSoon: true,
+      },
+      {
+        label: "Results & Reports",
+        href: "/admin/results",
+        icon: GraduationCap,
       },
       {
         label: "Fee Management",

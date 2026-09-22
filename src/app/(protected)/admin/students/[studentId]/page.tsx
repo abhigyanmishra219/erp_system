@@ -272,9 +272,76 @@ export default function StudentDetailPage({
     }
   }, [studentId]);
 
+  const [attendanceData, setAttendanceData] = useState<any>(null);
+  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
+
+  const [assignmentData, setAssignmentData] = useState<any>(null);
+  const [isAssignmentLoading, setIsAssignmentLoading] = useState(false);
+
+  const [examsData, setExamsData] = useState<any>(null);
+  const [isExamsLoading, setIsExamsLoading] = useState(false);
+
+  const fetchStudentAttendance = useCallback(async () => {
+    if (!studentId) return;
+    setIsAttendanceLoading(true);
+    try {
+      const res = await fetch(`/api/admin/attendance/student/${studentId}`);
+      const json = await res.json();
+      if (json.success) {
+        setAttendanceData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load student attendance:", err);
+    } finally {
+      setIsAttendanceLoading(false);
+    }
+  }, [studentId]);
+
+  const fetchStudentAssignments = useCallback(async () => {
+    if (!studentId) return;
+    setIsAssignmentLoading(true);
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/assignments`);
+      const json = await res.json();
+      if (json.success) {
+        setAssignmentData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load student assignments:", err);
+    } finally {
+      setIsAssignmentLoading(false);
+    }
+  }, [studentId]);
+
+  const fetchStudentExams = useCallback(async () => {
+    if (!studentId) return;
+    setIsExamsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/exams`);
+      const json = await res.json();
+      if (json.success) {
+        setExamsData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load student exams:", err);
+    } finally {
+      setIsExamsLoading(false);
+    }
+  }, [studentId]);
+
   useEffect(() => {
     fetchStudentData();
   }, [fetchStudentData]);
+
+  useEffect(() => {
+    if (activeTab === "attendance") {
+      fetchStudentAttendance();
+    } else if (activeTab === "assignments") {
+      fetchStudentAssignments();
+    } else if (activeTab === "exams") {
+      fetchStudentExams();
+    }
+  }, [activeTab, fetchStudentAttendance, fetchStudentAssignments, fetchStudentExams]);
 
   // Load parents list when link modal opens
   const openLinkParentModal = async () => {
@@ -587,9 +654,9 @@ export default function StudentDetailPage({
             { id: "parents", label: `Parents & Guardians (${parents.length})`, icon: ShieldCheck },
             { id: "history", label: "Academic History", icon: Clock },
             { id: "transfer", label: "Transfer Details", icon: ArrowRightLeft },
-            { id: "attendance", label: "Attendance", icon: Calendar, tag: "Phase A4" },
-            { id: "assignments", label: "Assignments", icon: FileText, tag: "Phase A5" },
-            { id: "exams", label: "Exams & Results", icon: Award, tag: "Phase A6" },
+            { id: "attendance", label: "Attendance", icon: Calendar },
+            { id: "assignments", label: "Assignments", icon: FileText },
+            { id: "exams", label: "Exams & Results", icon: Award },
             { id: "fees", label: "Fee Records", icon: CreditCard, tag: "Phase A7" },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1030,57 +1097,490 @@ export default function StudentDetailPage({
         </div>
       )}
 
-      {/* Tab 5: Attendance Placeholder (Phase A4) */}
+      {/* Tab 5: Attendance History (Phase A4) */}
       {activeTab === "attendance" && (
-        <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
-            <Calendar className="w-7 h-7" />
-          </div>
-          <div className="space-y-1">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              Coming in Phase A4
-            </span>
-            <h3 className="text-lg font-bold text-foreground">Attendance & Absence Management</h3>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Daily period-wise and full-day student attendance tracking, leave requests, parent notifications, and biometric integration will be activated in Phase A4.
-            </p>
-          </div>
+        <div className="space-y-6">
+          {isAttendanceLoading ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <RotateCw className="w-8 h-8 animate-spin text-indigo-500 mx-auto" />
+              <p className="text-xs text-muted-foreground">Loading attendance records...</p>
+            </div>
+          ) : !attendanceData || attendanceData.summary.totalMarked === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4 shadow-sm">
+              <div className="w-14 h-14 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
+                <Calendar className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-foreground">No attendance records found</h3>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  No daily attendance has been recorded for this student yet. Attendance marked on the Attendance page will show up here automatically.
+                </p>
+              </div>
+              <Link
+                href="/admin/attendance"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+              >
+                Go to Attendance Management →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Top Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    Total Marked
+                  </span>
+                  <span className="text-xl font-extrabold text-foreground">
+                    {attendanceData.summary.totalMarked}
+                  </span>
+                </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                    Present
+                  </span>
+                  <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                    {attendanceData.summary.presentCount}
+                  </span>
+                </div>
+                <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
+                    Absent
+                  </span>
+                  <span className="text-xl font-extrabold text-rose-600 dark:text-rose-400">
+                    {attendanceData.summary.absentCount}
+                  </span>
+                </div>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
+                    Late
+                  </span>
+                  <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400">
+                    {attendanceData.summary.lateCount}
+                  </span>
+                </div>
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
+                    Leave
+                  </span>
+                  <span className="text-xl font-extrabold text-purple-600 dark:text-purple-400">
+                    {attendanceData.summary.leaveCount}
+                  </span>
+                </div>
+                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                    Turnout %
+                  </span>
+                  <span className="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                    {attendanceData.summary.percentage}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Monthly Breakdown */}
+              {attendanceData.monthlyBreakdown?.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-indigo-500" />
+                    <span>Monthly Breakdown</span>
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {attendanceData.monthlyBreakdown.map((m: any) => (
+                      <div key={m.key} className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-foreground">{m.monthName} {m.year}</span>
+                          <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{m.percentage}%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{m.presentCount} P</span>
+                          <span className="text-rose-600 dark:text-rose-400 font-semibold">{m.absentCount} A</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">{m.lateCount} L</span>
+                          <span className="text-purple-600 dark:text-purple-400 font-semibold">{m.leaveCount} Lv</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Daily Log Table */}
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                  <h3 className="font-bold text-xs text-foreground flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-indigo-500" />
+                    <span>Daily Attendance Log ({attendanceData.records.length} records)</span>
+                  </h3>
+                  <Link
+                    href="/admin/attendance"
+                    className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+                  >
+                    Open Attendance Console →
+                  </Link>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-muted/50 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="py-3 px-4">Date</th>
+                        <th className="py-3 px-4">Class & Section</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4">Remarks</th>
+                        <th className="py-3 px-4">Recorded By</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {attendanceData.records.map((rec: any) => (
+                        <tr key={rec.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="py-3 px-4 font-mono font-bold text-foreground">
+                            {rec.date}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {rec.class?.name} - Section {rec.section?.name}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                rec.status === "PRESENT"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : rec.status === "ABSENT"
+                                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                  : rec.status === "LATE"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                              }`}
+                            >
+                              {rec.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {rec.remarks || "-"}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {rec.markedBy?.name || "Admin"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Tab 6: Assignments Placeholder (Phase A5) */}
+      {/* Tab 6: Assignments */}
       {activeTab === "assignments" && (
-        <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
-            <FileText className="w-7 h-7" />
-          </div>
-          <div className="space-y-1">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              Coming in Phase A5
-            </span>
-            <h3 className="text-lg font-bold text-foreground">Assignments & Homework Submissions</h3>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Digital homework assignments, teacher grading, student submissions, and study materials will be available in Phase A5.
-            </p>
-          </div>
+        <div className="space-y-6">
+          {isAssignmentLoading ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <RotateCw className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Loading coursework assignments...</p>
+            </div>
+          ) : !assignmentData || assignmentData.assignments.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-foreground">No assignments found</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  No homework or assignments have been issued for this student&apos;s current class & section yet.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/admin/assignments"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Create Assignment
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Summary KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
+                  <span className="text-[11px] font-medium text-muted-foreground">Total Assigned</span>
+                  <div className="text-lg font-bold text-foreground mt-0.5">
+                    {assignmentData.summary.total}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
+                  <span className="text-[11px] font-medium text-muted-foreground">Submitted</span>
+                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    {assignmentData.summary.submitted}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
+                  <span className="text-[11px] font-medium text-muted-foreground">Pending</span>
+                  <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                    {assignmentData.summary.pending}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
+                  <span className="text-[11px] font-medium text-muted-foreground">Late Submissions</span>
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400 mt-0.5">
+                    {assignmentData.summary.late}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
+                  <span className="text-[11px] font-medium text-muted-foreground">Reviewed</span>
+                  <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                    {assignmentData.summary.reviewed}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
+                  <span className="text-[11px] font-medium text-muted-foreground">Average Score</span>
+                  <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                    {assignmentData.summary.averagePercentage !== null ? `${assignmentData.summary.averagePercentage}%` : "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Coursework Table */}
+              <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-foreground">Coursework History</h3>
+                  <Link
+                    href="/admin/assignments"
+                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    View All Assignments &rarr;
+                  </Link>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-muted/50 border-b border-border text-muted-foreground font-semibold">
+                        <th className="py-2.5 px-4">Assignment</th>
+                        <th className="py-2.5 px-4">Subject</th>
+                        <th className="py-2.5 px-4">Teacher</th>
+                        <th className="py-2.5 px-4">Due Date</th>
+                        <th className="py-2.5 px-4">Status</th>
+                        <th className="py-2.5 px-4">Marks</th>
+                        <th className="py-2.5 px-4">Feedback</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {assignmentData.assignments.map((item: any) => {
+                        const statusColor =
+                          item.status === "REVIEWED"
+                            ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
+                            : item.status === "SUBMITTED"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                            : item.status === "LATE"
+                            ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+
+                        return (
+                          <tr key={item.assignmentId} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <Link
+                                href={`/admin/assignments/${item.assignmentId}`}
+                                className="font-semibold text-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              >
+                                {item.title}
+                              </Link>
+                              {item.description && (
+                                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                  {item.description}
+                                </p>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-foreground font-medium">
+                              {item.subject ? item.subject.name : "—"}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {item.teacher ? `${item.teacher.firstName} ${item.teacher.lastName}` : "—"}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {new Date(item.dueDate).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusColor}`}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-foreground">
+                              {item.submission && item.submission.marksObtained !== null && item.submission.marksObtained !== undefined
+                                ? `${item.submission.marksObtained} / ${item.totalMarks}`
+                                : `— / ${item.totalMarks}`}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground max-w-[200px]">
+                              {item.submission?.teacherFeedback ? (
+                                <span className="text-[11px] italic line-clamp-2">
+                                  &ldquo;{item.submission.teacherFeedback}&rdquo;
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/60">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Tab 7: Exams Placeholder (Phase A6) */}
+      {/* Tab 7: Exams & Results (Phase A6) */}
       {activeTab === "exams" && (
-        <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
-            <Award className="w-7 h-7" />
-          </div>
-          <div className="space-y-1">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              Coming in Phase A6
-            </span>
-            <h3 className="text-lg font-bold text-foreground">Examinations, Marks & Report Cards</h3>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Exam scheduling, grading scales, GPA calculation, report card generation, and student performance analytics will be delivered in Phase A6.
-            </p>
-          </div>
+        <div className="space-y-6">
+          {isExamsLoading ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <RotateCw className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Loading examination records...</p>
+            </div>
+          ) : !examsData || examsData.exams.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+                <Award className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-foreground">No examination records found</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  No evaluated examinations or report cards are currently available for this student.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/admin/exams"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  View All Exams
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {examsData.exams.map((item: any) => (
+                <div
+                  key={item.examId}
+                  className="bg-card border border-border rounded-xl shadow-sm overflow-hidden"
+                >
+                  <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-foreground">{item.examName}</h3>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            item.status === "PUBLISHED"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : item.status === "REVIEWED"
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Class: {item.class?.name || "N/A"} • Section: {item.section?.name || "N/A"}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-foreground">
+                          {item.totalObtained} / {item.totalMaximum} ({item.percentage.toFixed(1)}%)
+                        </div>
+                        <div className="text-xs font-semibold">
+                          Grade:{" "}
+                          <span
+                            className={
+                              item.isPassed
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-rose-600 dark:text-rose-400"
+                            }
+                          >
+                            {item.overallGrade} ({item.isPassed ? "PASSED" : "FAILED"})
+                          </span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/admin/results/${item.examId}/report-card/${studentId}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors shadow-sm"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Report Card
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Subject details */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
+                          <th className="py-2.5 px-4">Subject</th>
+                          <th className="py-2.5 px-4 text-center">Max Marks</th>
+                          <th className="py-2.5 px-4 text-center">Pass Marks</th>
+                          <th className="py-2.5 px-4 text-center">Marks Obtained</th>
+                          <th className="py-2.5 px-4 text-center">Percentage</th>
+                          <th className="py-2.5 px-4 text-center">Grade</th>
+                          <th className="py-2.5 px-4 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {item.subjects.map((sub: any) => (
+                          <tr key={sub.subjectId} className="hover:bg-muted/20 transition-colors">
+                            <td className="py-2.5 px-4 font-medium text-foreground">
+                              {sub.subjectName}
+                              {sub.subjectCode && (
+                                <span className="ml-1 text-[10px] text-muted-foreground font-mono">
+                                  ({sub.subjectCode})
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-4 text-center text-muted-foreground">
+                              {sub.maximumMarks}
+                            </td>
+                            <td className="py-2.5 px-4 text-center text-muted-foreground">
+                              {sub.passingMarks}
+                            </td>
+                            <td className="py-2.5 px-4 text-center font-bold text-foreground">
+                              {sub.marks !== null && sub.marks !== undefined ? sub.marks : "—"}
+                            </td>
+                            <td className="py-2.5 px-4 text-center text-muted-foreground">
+                              {sub.percentage !== null ? `${sub.percentage.toFixed(1)}%` : "—"}
+                            </td>
+                            <td className="py-2.5 px-4 text-center font-bold">
+                              {sub.grade}
+                            </td>
+                            <td className="py-2.5 px-4 text-center">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  sub.isPassed
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                }`}
+                              >
+                                {sub.isPassed ? "PASS" : "FAIL"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

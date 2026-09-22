@@ -35,6 +35,8 @@ import {
   Clock,
   Briefcase,
   User as UserIcon,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 
 interface TeacherProfile {
@@ -124,8 +126,33 @@ export default function TeacherDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "personal" | "assignments" | "account" | "attendance" | "timetable" | "exams"
+    "overview" | "personal" | "assignments" | "coursework" | "account" | "attendance" | "timetable" | "exams"
   >("overview");
+
+  const [courseworkData, setCourseworkData] = useState<any>(null);
+  const [isCourseworkLoading, setIsCourseworkLoading] = useState(false);
+
+  const fetchTeacherCoursework = useCallback(async () => {
+    if (!teacherId) return;
+    setIsCourseworkLoading(true);
+    try {
+      const res = await fetch(`/api/admin/teachers/${teacherId}/assignments`);
+      const json = await res.json();
+      if (json.success) {
+        setCourseworkData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load teacher coursework:", err);
+    } finally {
+      setIsCourseworkLoading(false);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (activeTab === "coursework") {
+      fetchTeacherCoursework();
+    }
+  }, [activeTab, fetchTeacherCoursework]);
 
   // Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -193,6 +220,10 @@ export default function TeacherDetailPage({
   const [isProvisioningAccount, setIsProvisioningAccount] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
 
+  // Exams State
+  const [examsData, setExamsData] = useState<any>(null);
+  const [isExamsLoading, setIsExamsLoading] = useState(false);
+
   // Action feedback
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -200,6 +231,22 @@ export default function TeacherDetailPage({
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(null), 4000);
   };
+
+  const fetchTeacherExams = useCallback(async () => {
+    if (!teacherId) return;
+    setIsExamsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/teachers/${teacherId}/exams`);
+      const json = await res.json();
+      if (json.success) {
+        setExamsData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load teacher exams:", err);
+    } finally {
+      setIsExamsLoading(false);
+    }
+  }, [teacherId]);
 
   // Fetch Teacher Data
   const fetchTeacherData = useCallback(async () => {
@@ -248,6 +295,12 @@ export default function TeacherDetailPage({
   useEffect(() => {
     fetchTeacherData();
   }, [fetchTeacherData]);
+
+  useEffect(() => {
+    if (activeTab === "exams") {
+      fetchTeacherExams();
+    }
+  }, [activeTab, fetchTeacherExams]);
 
   // Load metadata for Assignment modal
   const loadAssignmentMeta = async () => {
@@ -851,13 +904,18 @@ export default function TeacherDetailPage({
           { key: "personal", label: "Personal Information", icon: UserIcon },
           {
             key: "assignments",
-            label: `Academic Assignments (${activeAssignments.length})`,
+            label: `Class Allocations (${activeAssignments.length})`,
             icon: GraduationCap,
+          },
+          {
+            key: "coursework",
+            label: "Coursework & Material",
+            icon: FileText,
           },
           { key: "account", label: "Portal Account", icon: ShieldCheck },
           { key: "attendance", label: "Attendance", icon: Clock, badge: "Soon" },
           { key: "timetable", label: "Timetable", icon: Calendar, badge: "Soon" },
-          { key: "exams", label: "Exams & Marks", icon: Award, badge: "Soon" },
+          { key: "exams", label: "Exams & Marks", icon: Award },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -1552,12 +1610,343 @@ export default function TeacherDetailPage({
         </div>
       )}
 
+      {/* TAB 8: COURSEWORK & STUDY MATERIAL */}
+      {activeTab === "coursework" && (
+        <div className="space-y-6">
+          {isCourseworkLoading ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800">
+              <RotateCw className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+              <p className="text-xs text-slate-500">Loading teacher coursework and study materials...</p>
+            </div>
+          ) : !courseworkData ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500">No coursework data available.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Summary KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Assignments</span>
+                  <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                    {courseworkData.summary.totalAssignmentsCreated}
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Submissions</span>
+                  <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                    {courseworkData.summary.totalSubmissionsReceived}
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Reviewed</span>
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                    {courseworkData.summary.totalReviewedSubmissions}
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Review</span>
+                  <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
+                    {courseworkData.summary.pendingReviewCount}
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Study Materials</span>
+                  <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+                    {courseworkData.summary.totalStudyMaterialsCreated}
+                  </div>
+                </div>
+              </div>
+
+              {/* Assignments Created */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Assignments Created</h3>
+                    <p className="text-xs text-slate-500">Homework and projects authored by this teacher</p>
+                  </div>
+                  <Link
+                    href="/admin/assignments"
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Assignments Center &rarr;
+                  </Link>
+                </div>
+                {courseworkData.assignments.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    No assignments created yet by this teacher.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
+                          <th className="py-3 px-4">Title</th>
+                          <th className="py-3 px-4">Class & Section</th>
+                          <th className="py-3 px-4">Subject</th>
+                          <th className="py-3 px-4">Due Date</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4">Submissions</th>
+                          <th className="py-3 px-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {courseworkData.assignments.map((asgn: any) => (
+                          <tr key={asgn._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                              {asgn.title}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                              {asgn.classId?.name || "—"} {asgn.sectionId?.name ? `(${asgn.sectionId.name})` : "(All Sections)"}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                              {asgn.subjectId?.name || "—"}
+                            </td>
+                            <td className="py-3 px-4 text-slate-500">
+                              {new Date(asgn.dueDate).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                asgn.status === "PUBLISHED"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : asgn.status === "CLOSED"
+                                  ? "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              }`}>
+                                {asgn.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                              {asgn.submissionCount || 0}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Link
+                                href={`/admin/assignments/${asgn._id}`}
+                                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                              >
+                                View Submissions &rarr;
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Study Materials Uploaded */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Study Materials Published</h3>
+                    <p className="text-xs text-slate-500">Notes, references, and lesson resources uploaded by this teacher</p>
+                  </div>
+                  <Link
+                    href="/admin/study-material"
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Study Material Center &rarr;
+                  </Link>
+                </div>
+                {courseworkData.studyMaterials.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    No study materials uploaded yet by this teacher.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
+                          <th className="py-3 px-4">Title</th>
+                          <th className="py-3 px-4">Class</th>
+                          <th className="py-3 px-4">Subject</th>
+                          <th className="py-3 px-4">Topic</th>
+                          <th className="py-3 px-4">Type</th>
+                          <th className="py-3 px-4 text-right">Resource</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {courseworkData.studyMaterials.map((mat: any) => (
+                          <tr key={mat._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                              {mat.title}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                              {mat.classId?.name || "—"}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                              {mat.subjectId?.name || "—"}
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                              {mat.topic || "General"}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                {mat.fileType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <a
+                                href={mat.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline"
+                              >
+                                View / Download
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: EXAMS & MARKS RESPONSIBILITIES */}
+      {activeTab === "exams" && (
+        <div className="space-y-6">
+          {isExamsLoading ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800">
+              <RotateCw className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+              <p className="text-xs text-slate-500">Loading examination responsibilities...</p>
+            </div>
+          ) : !examsData ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500">No examination data available for this teacher.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Teaching Subject Scope for Evaluation */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <Award className="w-5 h-5 text-indigo-600" />
+                    Authorized Evaluation & Marks Entry Scope
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Based on academic allocations, this teacher has authorized grading access for the following class sections and subjects:
+                  </p>
+                </div>
+
+                {examsData.assignments.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-xs text-slate-500 text-center">
+                    No active subject allocations assigned yet to this teacher.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {examsData.assignments.map((alloc: any) => (
+                      <div
+                        key={alloc.id}
+                        className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-xs space-y-1.5"
+                      >
+                        <div className="font-bold text-slate-900 dark:text-white text-sm">
+                          {alloc.class?.name || "All Classes"} {alloc.section ? `- Sec ${alloc.section.name}` : ""}
+                        </div>
+                        <div className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                          {alloc.subject ? `${alloc.subject.name} (${alloc.subject.code || "N/A"})` : "All Subjects (Class Teacher)"}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Year: {alloc.academicYear?.name || "Active Session"} • {alloc.assignmentType}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Active School Examinations */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">Active Examinations</h3>
+                    <p className="text-xs text-slate-500">Exams requiring evaluation and marks submissions</p>
+                  </div>
+                  <Link
+                    href="/admin/exams"
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Exams Center &rarr;
+                  </Link>
+                </div>
+
+                {examsData.exams.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400">
+                    No active examinations scheduled for this teacher&apos;s academic session.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold">
+                          <th className="py-3 px-4">Exam Name</th>
+                          <th className="py-3 px-4">Session</th>
+                          <th className="py-3 px-4">Schedule Window</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {examsData.exams.map((ex: any) => (
+                          <tr key={ex.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                              {ex.name}
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                              {ex.academicYear?.name || "Current Year"}
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                              {new Date(ex.startDate).toLocaleDateString()} — {new Date(ex.endDate).toLocaleDateString()}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  ex.status === "RESULTS_PUBLISHED"
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : ex.status === "IN_PROGRESS" || ex.status === "SCHEDULED"
+                                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                    : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                                }`}
+                              >
+                                {ex.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <Link
+                                href={`/admin/exams/${ex.id}/marks`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors"
+                              >
+                                <span>Enter Marks</span>
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* PLACEHOLDER TABS */}
-      {["attendance", "timetable", "exams"].includes(activeTab) && (
+      {["attendance", "timetable"].includes(activeTab) && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
           <Sparkles className="w-12 h-12 text-indigo-500 mx-auto" />
           <h3 className="text-lg font-black text-slate-900 dark:text-white capitalize">
-            {activeTab === "exams" ? "Exams & Results" : activeTab} Module
+            {activeTab} Module
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             This module will integrate with Teacher Management in its dedicated phase. Teacher academic assignments created in Phase A3 serve as the foundation.

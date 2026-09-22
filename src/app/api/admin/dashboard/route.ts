@@ -8,7 +8,11 @@ import Subject from "@/models/Subject";
 import Student from "@/models/Student";
 import Parent from "@/models/Parent";
 import Teacher from "@/models/Teacher";
+import Attendance from "@/models/Attendance";
+import Assignment from "@/models/Assignment";
+import StudyMaterial from "@/models/StudyMaterial";
 import connectToDatabase from "@/lib/db";
+import { normalizeAttendanceDate } from "@/lib/utils/date";
 
 export async function GET(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
@@ -20,7 +24,9 @@ export async function GET(req: NextRequest) {
 
   await connectToDatabase();
 
-  // Query real academic foundation, teachers, students, and parent statistics
+  const today = normalizeAttendanceDate(new Date());
+
+  // Query real academic foundation, teachers, students, parent statistics, attendance, assignments, and study material
   const [
     activeAcademicYear,
     totalAcademicYears,
@@ -37,6 +43,10 @@ export async function GET(req: NextRequest) {
     totalTeachers,
     activeTeachers,
     inactiveTeachers,
+    todayAttendanceRecords,
+    totalAssignments,
+    publishedAssignments,
+    totalStudyMaterials,
   ] = await Promise.all([
     AcademicYear.findOne({ schoolId, status: "ACTIVE" }).lean(),
     AcademicYear.countDocuments({ schoolId }),
@@ -53,7 +63,28 @@ export async function GET(req: NextRequest) {
     Teacher.countDocuments({ schoolId }),
     Teacher.countDocuments({ schoolId, status: "ACTIVE" }),
     Teacher.countDocuments({ schoolId, status: "INACTIVE" }),
+    Attendance.find({ schoolId, date: today }).lean(),
+    Assignment.countDocuments({ schoolId, isActive: true }),
+    Assignment.countDocuments({ schoolId, isActive: true, status: "PUBLISHED" }),
+    StudyMaterial.countDocuments({ schoolId, isActive: true }),
   ]);
+
+  let presentToday = 0;
+  let absentToday = 0;
+  let lateToday = 0;
+  let leaveToday = 0;
+
+  for (const rec of todayAttendanceRecords) {
+    if (rec.status === "PRESENT") presentToday++;
+    else if (rec.status === "ABSENT") absentToday++;
+    else if (rec.status === "LATE") lateToday++;
+    else if (rec.status === "LEAVE") leaveToday++;
+  }
+
+  const totalMarkedToday = presentToday + absentToday + lateToday + leaveToday;
+  const attendedToday = presentToday + lateToday;
+  const attendanceRateToday =
+    totalMarkedToday > 0 ? Number(((attendedToday / totalMarkedToday) * 100).toFixed(1)) : 0;
 
   // Compute real setup checklist
   const hasSchoolInfo = !!(school.name && (school.phone || school.email || school.address));
@@ -147,6 +178,21 @@ export async function GET(req: NextRequest) {
       total: totalParents,
       active: activeParents,
     },
+    attendance: {
+      presentToday,
+      absentToday,
+      lateToday,
+      leaveToday,
+      totalMarkedToday,
+      attendanceRateToday,
+    },
+    assignments: {
+      total: totalAssignments,
+      published: publishedAssignments,
+    },
+    studyMaterial: {
+      total: totalStudyMaterials,
+    },
     setup: {
       items: setupItems,
       completedSteps,
@@ -159,9 +205,9 @@ export async function GET(req: NextRequest) {
       students: true,
       teachers: true,
       parents: true,
-      attendance: false,
-      assignments: false,
-      studyMaterial: false,
+      attendance: true,
+      assignments: true,
+      studyMaterial: true,
       exams: false,
       fees: false,
       timetable: false,

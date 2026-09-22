@@ -20,6 +20,7 @@ import {
   RotateCw,
   AlertCircle,
   ExternalLink,
+  CalendarCheck,
 } from "lucide-react";
 
 interface SetupItem {
@@ -86,6 +87,14 @@ interface DashboardData {
     total: number;
     active: number;
     inactive: number;
+  };
+  attendance?: {
+    presentToday: number;
+    absentToday: number;
+    lateToday: number;
+    leaveToday: number;
+    totalMarkedToday: number;
+    attendanceRateToday: number;
   };
   setup: {
     items: SetupItem[];
@@ -325,6 +334,57 @@ export default function SchoolAdminDashboardPage() {
           </div>
         </Link>
       </div>
+
+      {/* Attendance Today Snapshot */}
+      {data?.attendance && (
+        <div className="p-6 rounded-3xl bg-card border border-border shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <CalendarCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Today's Attendance Snapshot</h2>
+                <p className="text-[11px] text-muted-foreground">Real-time daily student attendance across all sections</p>
+              </div>
+            </div>
+            <Link
+              href="/admin/attendance"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+            >
+              <span>Manage Attendance</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="p-3.5 rounded-2xl bg-surface-2 border border-border">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Total Marked</span>
+              <span className="text-xl font-extrabold text-foreground">{data.attendance.totalMarkedToday}</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">Present</span>
+              <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{data.attendance.presentToday}</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">Absent</span>
+              <span className="text-xl font-extrabold text-rose-600 dark:text-rose-400">{data.attendance.absentToday}</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">Late</span>
+              <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400">{data.attendance.lateToday}</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">On Leave</span>
+              <span className="text-xl font-extrabold text-purple-600 dark:text-purple-400">{data.attendance.leaveToday}</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-primary/10 border border-primary/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Turnout Rate</span>
+              <span className="text-xl font-extrabold text-primary">{data.attendance.attendanceRateToday}%</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Row 2: Real 10-Step Setup Progress Checklist */}
       <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-sm space-y-6">
