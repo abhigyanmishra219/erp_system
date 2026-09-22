@@ -34,14 +34,27 @@ export async function GET(req: NextRequest) {
 
   const classIds = classes.map((c) => c._id);
 
-  // Aggregate sections count per class
-  const sectionCounts = await Section.aggregate([
-    { $match: { schoolId: new mongoose.Types.ObjectId(schoolId), classId: { $in: classIds }, isActive: true } },
-    { $group: { _id: "$classId", count: { $sum: 1 } } },
-  ]);
-  const sectionCountMap: Record<string, number> = {};
-  sectionCounts.forEach((sc) => {
-    sectionCountMap[sc._id.toString()] = sc.count;
+  // Query all active sections for these classes
+  const allSections = await Section.find({
+    schoolId: new mongoose.Types.ObjectId(schoolId),
+    classId: { $in: classIds },
+    isActive: true,
+  })
+    .sort({ name: 1 })
+    .lean();
+
+  const sectionsByClassMap: Record<string, { id: string; name: string; code?: string; capacity?: number }[]> = {};
+  allSections.forEach((s) => {
+    const cId = s.classId.toString();
+    if (!sectionsByClassMap[cId]) {
+      sectionsByClassMap[cId] = [];
+    }
+    sectionsByClassMap[cId].push({
+      id: s._id.toString(),
+      name: s.name,
+      code: s.code || "",
+      capacity: s.capacity,
+    });
   });
 
   // Aggregate subjects count per class
@@ -64,7 +77,8 @@ export async function GET(req: NextRequest) {
         displayOrder: c.displayOrder,
         academicYearId: (c.academicYearId as any)?._id?.toString() || c.academicYearId?.toString(),
         academicYearName: (c.academicYearId as any)?.name || "Unknown Year",
-        sectionsCount: sectionCountMap[c._id.toString()] || 0,
+        sections: sectionsByClassMap[c._id.toString()] || [],
+        sectionsCount: (sectionsByClassMap[c._id.toString()] || []).length,
         subjectsCount: subjectCountMap[c._id.toString()] || 0,
         isActive: c.isActive,
         createdAt: c.createdAt,

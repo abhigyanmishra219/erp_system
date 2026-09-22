@@ -12,6 +12,10 @@ export const PERMISSIONS = {
   TEACHER_CREATE: "teacher.create",
   TEACHER_EDIT: "teacher.edit",
   TEACHER_DELETE: "teacher.delete",
+  TEACHER_STATUS_MANAGE: "teacher.status.manage",
+  TEACHER_ACCOUNT_MANAGE: "teacher.account.manage",
+  TEACHER_ASSIGNMENT_MANAGE: "teacher.assignment.manage",
+  CLASS_TEACHER_MANAGE: "class.teacher.manage",
 
   // Parent Management
   PARENT_VIEW: "parent.view",

@@ -5,6 +5,9 @@ import AcademicYear from "@/models/AcademicYear";
 import Class from "@/models/Class";
 import Section from "@/models/Section";
 import Subject from "@/models/Subject";
+import Student from "@/models/Student";
+import Parent from "@/models/Parent";
+import Teacher from "@/models/Teacher";
 import connectToDatabase from "@/lib/db";
 
 export async function GET(req: NextRequest) {
@@ -17,15 +20,40 @@ export async function GET(req: NextRequest) {
 
   await connectToDatabase();
 
-  // Query real academic foundation statistics
-  const [activeAcademicYear, totalAcademicYears, totalClasses, totalSections, totalSubjects] =
-    await Promise.all([
-      AcademicYear.findOne({ schoolId, status: "ACTIVE" }).lean(),
-      AcademicYear.countDocuments({ schoolId }),
-      Class.countDocuments({ schoolId, isActive: true }),
-      Section.countDocuments({ schoolId, isActive: true }),
-      Subject.countDocuments({ schoolId, isActive: true }),
-    ]);
+  // Query real academic foundation, teachers, students, and parent statistics
+  const [
+    activeAcademicYear,
+    totalAcademicYears,
+    totalClasses,
+    totalSections,
+    totalSubjects,
+    totalStudents,
+    activeStudents,
+    inactiveStudents,
+    transferredStudents,
+    graduatedStudents,
+    totalParents,
+    activeParents,
+    totalTeachers,
+    activeTeachers,
+    inactiveTeachers,
+  ] = await Promise.all([
+    AcademicYear.findOne({ schoolId, status: "ACTIVE" }).lean(),
+    AcademicYear.countDocuments({ schoolId }),
+    Class.countDocuments({ schoolId, isActive: true }),
+    Section.countDocuments({ schoolId, isActive: true }),
+    Subject.countDocuments({ schoolId, isActive: true }),
+    Student.countDocuments({ schoolId }),
+    Student.countDocuments({ schoolId, status: "ACTIVE" }),
+    Student.countDocuments({ schoolId, status: "INACTIVE" }),
+    Student.countDocuments({ schoolId, status: "TRANSFERRED" }),
+    Student.countDocuments({ schoolId, status: "GRADUATED" }),
+    Parent.countDocuments({ schoolId }),
+    Parent.countDocuments({ schoolId, status: "ACTIVE" }),
+    Teacher.countDocuments({ schoolId }),
+    Teacher.countDocuments({ schoolId, status: "ACTIVE" }),
+    Teacher.countDocuments({ schoolId, status: "INACTIVE" }),
+  ]);
 
   // Compute real setup checklist
   const hasSchoolInfo = !!(school.name && (school.phone || school.email || school.address));
@@ -34,6 +62,8 @@ export async function GET(req: NextRequest) {
   const hasClasses = totalClasses > 0;
   const hasSections = totalSections > 0;
   const hasSubjects = totalSubjects > 0;
+  const hasTeachers = totalTeachers > 0;
+  const hasStudents = totalStudents > 0;
   const hasGrading = !!(school.gradingSettings?.scales && school.gradingSettings.scales.length > 0);
   const hasAttendance = !!(
     school.attendanceSettings?.workingDays && school.attendanceSettings.workingDays.length > 0
@@ -47,6 +77,8 @@ export async function GET(req: NextRequest) {
     { key: "classes", label: "Classes", completed: hasClasses, href: "/admin/academics/classes" },
     { key: "sections", label: "Sections", completed: hasSections, href: "/admin/academics/classes" },
     { key: "subjects", label: "Subjects", completed: hasSubjects, href: "/admin/academics/subjects" },
+    { key: "teachers", label: "Add Teachers & Staff", completed: hasTeachers, href: "/admin/teachers" },
+    { key: "students", label: "Enroll Students", completed: hasStudents, href: "/admin/students" },
     { key: "grading", label: "Grading System", completed: hasGrading, href: "/admin/settings" },
     { key: "attendance", label: "Attendance Settings", completed: hasAttendance, href: "/admin/settings" },
     { key: "fees", label: "Fee Settings", completed: hasFees, href: "/admin/settings" },
@@ -99,6 +131,22 @@ export async function GET(req: NextRequest) {
       totalSections,
       totalSubjects,
     },
+    teachers: {
+      total: totalTeachers,
+      active: activeTeachers,
+      inactive: inactiveTeachers,
+    },
+    students: {
+      total: totalStudents,
+      active: activeStudents,
+      inactive: inactiveStudents,
+      transferred: transferredStudents,
+      graduated: graduatedStudents,
+    },
+    parents: {
+      total: totalParents,
+      active: activeParents,
+    },
     setup: {
       items: setupItems,
       completedSteps,
@@ -108,9 +156,9 @@ export async function GET(req: NextRequest) {
     },
     capabilities: {
       academics: hasAcademicYear && hasClasses,
-      students: false,
-      teachers: false,
-      parents: false,
+      students: true,
+      teachers: true,
+      parents: true,
       attendance: false,
       assignments: false,
       studyMaterial: false,

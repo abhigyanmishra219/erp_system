@@ -9,6 +9,9 @@ export interface IUser extends Document {
   password?: string;
   role: UserRole;
   schoolId?: mongoose.Types.ObjectId | string | null;
+  studentId?: mongoose.Types.ObjectId | string | null;
+  parentId?: mongoose.Types.ObjectId | string | null;
+  teacherId?: mongoose.Types.ObjectId | string | null;
   mustChangePassword: boolean;
   isActive: boolean;
   createdAt: Date;
@@ -45,6 +48,24 @@ const UserSchema = new Schema<IUser>(
     schoolId: {
       type: Schema.Types.ObjectId,
       ref: "School",
+      default: null,
+      index: true,
+    },
+    studentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Student",
+      default: null,
+      index: true,
+    },
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Parent",
+      default: null,
+      index: true,
+    },
+    teacherId: {
+      type: Schema.Types.ObjectId,
+      ref: "Teacher",
       default: null,
       index: true,
     },

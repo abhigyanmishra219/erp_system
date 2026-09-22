@@ -15,6 +15,8 @@ import {
   CreditCard,
   Settings,
   User,
+  Users,
+  GraduationCap,
   RotateCw,
   AlertCircle,
   ExternalLink,
@@ -68,6 +70,22 @@ interface DashboardData {
     totalClasses: number;
     totalSections: number;
     totalSubjects: number;
+  };
+  students?: {
+    total: number;
+    active: number;
+    inactive: number;
+    transferred: number;
+    graduated: number;
+  };
+  parents?: {
+    total: number;
+    active: number;
+  };
+  teachers?: {
+    total: number;
+    active: number;
+    inactive: number;
   };
   setup: {
     items: SetupItem[];
@@ -165,32 +183,121 @@ export default function SchoolAdminDashboardPage() {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
           <div className="p-3.5 rounded-2xl bg-surface-2 border border-border flex items-center gap-3 text-xs">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
             <div>
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-                Tenant Status
+              <span className="text-muted-foreground block text-[10px] uppercase font-bold tracking-wider">
+                Plan & Validity
               </span>
-              <span className="font-semibold text-foreground flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {school.status} Instance
+              <span className="font-extrabold text-foreground">
+                {school.plan} ({daysRemaining} days left)
               </span>
             </div>
           </div>
 
           <button
             onClick={() => fetchDashboardData()}
-            className="p-3 rounded-2xl bg-surface-2 hover:bg-surface-3 border border-border text-foreground transition-all flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer shadow-xs"
-            title="Refresh Dashboard"
+            className="p-3.5 rounded-2xl bg-surface-2 border border-border hover:bg-muted text-foreground transition-colors cursor-pointer flex items-center justify-center"
+            title="Refresh Metrics"
           >
             <RotateCw className="w-4 h-4 text-primary" />
           </button>
         </div>
       </div>
 
-      {/* Row 1: Real Academic Foundation Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Row 1: Real Academic, Teacher, Student & Parent Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Total Students */}
+        <Link
+          href="/admin/students"
+          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Students
+            </span>
+            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 group-hover:scale-105 transition-transform">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-xl font-extrabold text-foreground block">
+              {data?.students ? data.students.total : 0}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {data?.students?.active || 0} active students
+            </span>
+          </div>
+        </Link>
+
+        {/* Total Teachers */}
+        <Link
+          href="/admin/teachers"
+          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Teachers & Staff
+            </span>
+            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-105 transition-transform">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-xl font-extrabold text-foreground block">
+              {data?.teachers ? data.teachers.total : 0}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {data?.teachers?.active || 0} active faculty members
+            </span>
+          </div>
+        </Link>
+
+        {/* Total Parents */}
+        <Link
+          href="/admin/parents"
+          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Parents
+            </span>
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-xl font-extrabold text-foreground block">
+              {data?.parents ? data.parents.total : 0}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {data?.parents?.active || 0} active guardian profiles
+            </span>
+          </div>
+        </Link>
+
+        {/* Classes Count */}
+        <Link
+          href="/admin/academics/classes"
+          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Classes & Sections
+            </span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500 group-hover:scale-105 transition-transform">
+              <Building2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-xl font-extrabold text-foreground block">
+              {academics.totalClasses > 0 ? `${academics.totalClasses} Classes` : "No Classes"}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {academics.totalSections > 0 ? `${academics.totalSections} sections` : "0 sections configured"}
+            </span>
+          </div>
+        </Link>
+
         {/* Active Academic Year */}
         <Link
           href="/admin/academics/academic-years"
@@ -217,80 +324,9 @@ export default function SchoolAdminDashboardPage() {
             </span>
           </div>
         </Link>
-
-        {/* Classes Count */}
-        <Link
-          href="/admin/academics/classes"
-          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Total Classes / Grades
-            </span>
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500 group-hover:scale-105 transition-transform">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl font-extrabold text-foreground block">
-              {academics.totalClasses > 0 ? academics.totalClasses : "No Classes"}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              {academics.totalClasses > 0
-                ? `${academics.totalClasses} grade levels configured`
-                : "Click to add school classes"}
-            </span>
-          </div>
-        </Link>
-
-        {/* Sections Count */}
-        <Link
-          href="/admin/academics/classes"
-          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Active Sections
-            </span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 group-hover:scale-105 transition-transform">
-              <Layers className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl font-extrabold text-foreground block">
-              {academics.totalSections > 0 ? academics.totalSections : "0 Sections"}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              Classroom section divisions
-            </span>
-          </div>
-        </Link>
-
-        {/* Subjects Count */}
-        <Link
-          href="/admin/academics/subjects"
-          className="p-5 rounded-2xl bg-card border border-border hover:border-primary/40 transition-all space-y-3 shadow-xs group cursor-pointer block"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Curriculum Subjects
-            </span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl font-extrabold text-foreground block">
-              {academics.totalSubjects > 0 ? academics.totalSubjects : "0 Subjects"}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              Master subject catalog
-            </span>
-          </div>
-        </Link>
       </div>
 
-      {/* Row 2: Real 9-Step Setup Progress Checklist */}
+      {/* Row 2: Real 10-Step Setup Progress Checklist */}
       <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
           <div className="space-y-1">
@@ -321,7 +357,7 @@ export default function SchoolAdminDashboardPage() {
           </div>
         </div>
 
-        {/* 9 Checklist Items Grid */}
+        {/* 10 Checklist Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {setup.items.map((item) => (
             <Link
@@ -358,12 +394,12 @@ export default function SchoolAdminDashboardPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
           {[
-            { label: "Academic Years", href: "/admin/academics/academic-years", icon: Calendar, color: "text-primary" },
-            { label: "Classes & Sections", href: "/admin/academics/classes", icon: Building2, color: "text-purple-500" },
-            { label: "Subjects Catalog", href: "/admin/academics/subjects", icon: BookOpen, color: "text-emerald-500" },
-            { label: "School Settings", href: "/admin/settings", icon: Settings, color: "text-amber-500" },
-            { label: "Branding Setup", href: "/admin/settings", icon: Sparkles, color: "text-cyan-500" },
-            { label: "My Profile", href: "/admin/profile", icon: User, color: "text-rose-500" },
+            { label: "Student Directory", href: "/admin/students", icon: Users, color: "text-indigo-500" },
+            { label: "Enroll Student", href: "/admin/students/create", icon: User, color: "text-primary" },
+            { label: "Bulk Promotion", href: "/admin/students/promote", icon: GraduationCap, color: "text-purple-500" },
+            { label: "Parents Directory", href: "/admin/parents", icon: ShieldCheck, color: "text-emerald-500" },
+            { label: "Classes & Sections", href: "/admin/academics/classes", icon: Building2, color: "text-amber-500" },
+            { label: "Subjects Catalog", href: "/admin/academics/subjects", icon: BookOpen, color: "text-cyan-500" },
           ].map((action) => {
             const Icon = action.icon;
             return (
