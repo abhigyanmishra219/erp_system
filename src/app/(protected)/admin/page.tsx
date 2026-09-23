@@ -96,6 +96,16 @@ interface DashboardData {
     totalMarkedToday: number;
     attendanceRateToday: number;
   };
+  fees?: {
+    totalRevenue: number;
+    totalCollected?: number;
+    totalPending: number;
+    totalAssigned: number;
+    paidCount: number;
+    partialCount: number;
+    unpaidCount: number;
+    totalAccounts: number;
+  };
   setup: {
     items: SetupItem[];
     completedSteps: number;
@@ -381,6 +391,57 @@ export default function SchoolAdminDashboardPage() {
             <div className="p-3.5 rounded-2xl bg-primary/10 border border-primary/20">
               <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Turnout Rate</span>
               <span className="text-xl font-extrabold text-primary">{data.attendance.attendanceRateToday}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fee Collection & Financials Snapshot */}
+      {data?.fees && (
+        <div className="p-6 rounded-3xl bg-card border border-border shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Fee Collection & Financial Snapshot</h2>
+                <p className="text-[11px] text-muted-foreground">Live institutional fee receivables, collections, and student account statuses</p>
+              </div>
+            </div>
+            <Link
+              href="/admin/fees"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+            >
+              <span>Fee Hub Console</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-2xl bg-surface-2 border border-border">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Total Receivables</span>
+              <span className="text-xl font-extrabold text-foreground">₹{(data.fees?.totalAssigned ?? 0).toLocaleString("en-IN")}</span>
+              <span className="text-[10px] text-muted-foreground block mt-0.5">{data.fees?.totalAccounts ?? 0} student accounts</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">Total Collected</span>
+              <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">₹{(data.fees?.totalRevenue ?? data.fees?.totalCollected ?? 0).toLocaleString("en-IN")}</span>
+              <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 block mt-0.5">{data.fees?.paidCount ?? 0} fully settled</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">Pending Outstanding</span>
+              <span className="text-xl font-extrabold text-rose-600 dark:text-rose-400">₹{(data.fees?.totalPending ?? 0).toLocaleString("en-IN")}</span>
+              <span className="text-[10px] text-rose-600/80 dark:text-rose-400/80 block mt-0.5">{(data.fees?.unpaidCount ?? 0) + (data.fees?.partialCount ?? 0)} pending/partial</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-primary/10 border border-primary/20">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">Collection Rate</span>
+              <span className="text-xl font-extrabold text-primary">
+                {(data.fees?.totalAssigned ?? 0) > 0
+                  ? `${Math.round(((data.fees?.totalRevenue ?? data.fees?.totalCollected ?? 0) / (data.fees?.totalAssigned || 1)) * 100)}%`
+                  : "0%"}
+              </span>
+              <span className="text-[10px] text-primary/80 block mt-0.5">Realization efficiency</span>
             </div>
           </div>
         </div>

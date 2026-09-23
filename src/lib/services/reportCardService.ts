@@ -9,6 +9,7 @@ import Subject from "@/models/Subject";
 import School from "@/models/School";
 import Attendance from "@/models/Attendance";
 import { ResultCalculationService, SubjectResultInput } from "./resultCalculationService";
+import { calculateAttendancePercentage } from "@/lib/utils/attendance";
 
 export interface ReportCardData {
   school: {
@@ -224,9 +225,7 @@ export class ReportCardService {
 
     const totalSessions = attendanceRecords.length;
     const effectivePresent = present + late + (halfDay * 0.5);
-    const attendancePercentage = totalSessions > 0
-      ? Math.round(((effectivePresent / totalSessions) * 100) * 10) / 10
-      : 100;
+    const attendancePercentage = calculateAttendancePercentage(effectivePresent, totalSessions);
 
     // 3. Assemble Full Report Card DTO
     const studentUser = (student as any).userId;

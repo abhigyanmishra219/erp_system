@@ -232,6 +232,32 @@ export default function TeacherDetailPage({
     setTimeout(() => setSuccessToast(null), 4000);
   };
 
+  // Timetable State
+  const [timetableData, setTimetableData] = useState<any>(null);
+  const [isTimetableLoading, setIsTimetableLoading] = useState(false);
+
+  const fetchTeacherTimetable = useCallback(async () => {
+    if (!teacherId) return;
+    setIsTimetableLoading(true);
+    try {
+      const res = await fetch(`/api/admin/timetable/teacher/${teacherId}`);
+      const json = await res.json();
+      if (json.success) {
+        setTimetableData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load teacher timetable:", err);
+    } finally {
+      setIsTimetableLoading(false);
+    }
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (activeTab === "timetable") {
+      fetchTeacherTimetable();
+    }
+  }, [activeTab, fetchTeacherTimetable]);
+
   const fetchTeacherExams = useCallback(async () => {
     if (!teacherId) return;
     setIsExamsLoading(true);
@@ -904,7 +930,7 @@ export default function TeacherDetailPage({
           { key: "personal", label: "Personal Information", icon: UserIcon },
           {
             key: "assignments",
-            label: `Class Allocations (${activeAssignments.length})`,
+            label: `Class Teacher Assignments (${classTeacherAssignments.length})`,
             icon: GraduationCap,
           },
           {
@@ -914,7 +940,7 @@ export default function TeacherDetailPage({
           },
           { key: "account", label: "Portal Account", icon: ShieldCheck },
           { key: "attendance", label: "Attendance", icon: Clock, badge: "Soon" },
-          { key: "timetable", label: "Timetable", icon: Calendar, badge: "Soon" },
+          { key: "timetable", label: "Timetable", icon: Calendar },
           { key: "exams", label: "Exams & Marks", icon: Award },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -1333,7 +1359,7 @@ export default function TeacherDetailPage({
         </div>
       )}
 
-      {/* TAB 3: ACADEMIC ASSIGNMENTS */}
+      {/* TAB 3: CLASS TEACHER ASSIGNMENTS */}
       {activeTab === "assignments" && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
@@ -1341,17 +1367,17 @@ export default function TeacherDetailPage({
               <div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-indigo-600" />
-                  Assigned Classes, Sections & Subjects
+                  Assigned Class Teacher Responsibilities
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Manage academic duties, subject assignments, and Class Teacher responsibilities.
+                  Manage class teacher responsibilities for class sections. Academic teaching periods and timetable schedules are managed separately under the Timetable tab.
                 </p>
               </div>
               <button
                 onClick={handleOpenAddAssignment}
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition"
               >
-                <Plus className="w-4 h-4" /> Add Academic Assignment
+                <Plus className="w-4 h-4" /> Add Class Teacher Assignment
               </button>
             </div>
 
@@ -1360,16 +1386,16 @@ export default function TeacherDetailPage({
               <div className="text-center py-12 px-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 space-y-3">
                 <BookOpen className="w-10 h-10 text-slate-400 mx-auto" />
                 <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  No Academic Assignments Found
+                  No Class Teacher Assignments Found
                 </h4>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  This teacher currently does not have any active class, section, or subject assignments.
+                  This teacher currently does not have any active class teacher responsibilities assigned.
                 </p>
                 <button
                   onClick={handleOpenAddAssignment}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold text-xs rounded-xl shadow-sm hover:bg-indigo-700 transition mt-2"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Assign First Subject or Class
+                  <Plus className="w-3.5 h-3.5" /> Assign as Class Teacher
                 </button>
               </div>
             ) : (
@@ -1379,7 +1405,6 @@ export default function TeacherDetailPage({
                     <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
                       <th className="py-3 px-4">Academic Year</th>
                       <th className="py-3 px-4">Class & Section</th>
-                      <th className="py-3 px-4">Subject</th>
                       <th className="py-3 px-4">Assignment Role</th>
                       <th className="py-3 px-4">Assigned On</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -1401,22 +1426,6 @@ export default function TeacherDetailPage({
                           <span className="ml-1.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[11px]">
                             Sec {a.section?.name || "A"}
                           </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {a.subject ? (
-                            <div>
-                              <span className="font-bold text-slate-800 dark:text-slate-200">
-                                {a.subject.name}
-                              </span>
-                              {a.subject.code && (
-                                <span className="ml-1.5 text-[10px] text-slate-400 font-mono">
-                                  ({a.subject.code})
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 italic">Class Teacher Only</span>
-                          )}
                         </td>
                         <td className="py-3.5 px-4">
                           {a.isClassTeacher ? (
@@ -1469,6 +1478,22 @@ export default function TeacherDetailPage({
                 </table>
               </div>
             )}
+
+            {/* Timetable separation callout */}
+            <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                <span className="text-xs text-indigo-900 dark:text-indigo-200">
+                  Looking for teaching schedules, subject slots, and room allocations? Timetable is managed as a separate system.
+                </span>
+              </div>
+              <button
+                onClick={() => setActiveTab("timetable")}
+                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap"
+              >
+                View Timetable &rarr;
+              </button>
+            </div>
           </div>
 
           {/* Past / Inactive Assignments */}
@@ -1481,10 +1506,9 @@ export default function TeacherDetailPage({
                 <table className="w-full text-left border-collapse text-xs text-slate-500">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-800">
-                      <th className="py-2 px-3">Year</th>
+                      <th className="py-2 px-3">Academic Year</th>
                       <th className="py-2 px-3">Class & Section</th>
-                      <th className="py-2 px-3">Subject</th>
-                      <th className="py-2 px-3">Class Teacher</th>
+                      <th className="py-2 px-3">Assignment Role</th>
                       <th className="py-2 px-3">Status</th>
                     </tr>
                   </thead>
@@ -1495,8 +1519,7 @@ export default function TeacherDetailPage({
                         <td className="py-2 px-3">
                           {a.class?.name} - {a.section?.name}
                         </td>
-                        <td className="py-2 px-3">{a.subject?.name || "None"}</td>
-                        <td className="py-2 px-3">{a.isClassTeacher ? "Yes" : "No"}</td>
+                        <td className="py-2 px-3">{a.isClassTeacher ? "Class Teacher" : "Subject Teacher"}</td>
                         <td className="py-2 px-3">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">
                             Inactive
@@ -1629,31 +1652,31 @@ export default function TeacherDetailPage({
                 <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Assignments</span>
                   <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
-                    {courseworkData.summary.totalAssignmentsCreated}
+                    {courseworkData.summary?.totalAssignmentsCreated ?? 0}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Submissions</span>
                   <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
-                    {courseworkData.summary.totalSubmissionsReceived}
+                    {courseworkData.summary?.totalSubmissionsReceived ?? 0}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Reviewed</span>
                   <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                    {courseworkData.summary.totalReviewedSubmissions}
+                    {courseworkData.summary?.totalReviewedSubmissions ?? 0}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Review</span>
                   <div className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">
-                    {courseworkData.summary.pendingReviewCount}
+                    {courseworkData.summary?.pendingReviewCount ?? 0}
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Study Materials</span>
                   <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-                    {courseworkData.summary.totalStudyMaterialsCreated}
+                    {courseworkData.summary?.totalStudyMaterialsCreated ?? 0}
                   </div>
                 </div>
               </div>
@@ -1672,7 +1695,7 @@ export default function TeacherDetailPage({
                     Assignments Center &rarr;
                   </Link>
                 </div>
-                {courseworkData.assignments.length === 0 ? (
+                {(!courseworkData.assignments || courseworkData.assignments.length === 0) ? (
                   <div className="p-8 text-center text-xs text-slate-400">
                     No assignments created yet by this teacher.
                   </div>
@@ -1691,23 +1714,23 @@ export default function TeacherDetailPage({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {courseworkData.assignments.map((asgn: any) => (
-                          <tr key={asgn._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        {(courseworkData.assignments || []).map((asgn: any) => (
+                          <tr key={asgn._id || asgn.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                             <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
                               {asgn.title}
                             </td>
                             <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                              {asgn.classId?.name || "—"} {asgn.sectionId?.name ? `(${asgn.sectionId.name})` : "(All Sections)"}
+                              {asgn.classId?.name || asgn.class?.name || "—"} {(asgn.sectionId?.name || asgn.section?.name) ? `(${asgn.sectionId?.name || asgn.section?.name})` : "(All Sections)"}
                             </td>
                             <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                              {asgn.subjectId?.name || "—"}
+                              {asgn.subjectId?.name || asgn.subject?.name || "—"}
                             </td>
                             <td className="py-3 px-4 text-slate-500">
-                              {new Date(asgn.dueDate).toLocaleDateString("en-US", {
+                              {asgn.dueDate ? new Date(asgn.dueDate).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
-                              })}
+                              }) : "—"}
                             </td>
                             <td className="py-3 px-4">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -1725,7 +1748,7 @@ export default function TeacherDetailPage({
                             </td>
                             <td className="py-3 px-4 text-right">
                               <Link
-                                href={`/admin/assignments/${asgn._id}`}
+                                href={`/admin/assignments/${asgn._id || asgn.id}`}
                                 className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700"
                               >
                                 View Submissions &rarr;
@@ -1753,7 +1776,7 @@ export default function TeacherDetailPage({
                     Study Material Center &rarr;
                   </Link>
                 </div>
-                {courseworkData.studyMaterials.length === 0 ? (
+                {(!courseworkData.studyMaterials || courseworkData.studyMaterials.length === 0) ? (
                   <div className="p-8 text-center text-xs text-slate-400">
                     No study materials uploaded yet by this teacher.
                   </div>
@@ -1771,35 +1794,39 @@ export default function TeacherDetailPage({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {courseworkData.studyMaterials.map((mat: any) => (
-                          <tr key={mat._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        {(courseworkData.studyMaterials || []).map((mat: any) => (
+                          <tr key={mat._id || mat.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                             <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
                               {mat.title}
                             </td>
                             <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                              {mat.classId?.name || "—"}
+                              {mat.classId?.name || mat.class?.name || "—"}
                             </td>
                             <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                              {mat.subjectId?.name || "—"}
+                              {mat.subjectId?.name || mat.subject?.name || "—"}
                             </td>
                             <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
                               {mat.topic || "General"}
                             </td>
                             <td className="py-3 px-4">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                                {mat.fileType}
+                                {mat.fileType || mat.type || "FILE"}
                               </span>
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <a
-                                href={mat.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline"
-                              >
-                                View / Download
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
+                              {(mat.fileUrl || mat.url) ? (
+                                <a
+                                  href={mat.fileUrl || mat.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline"
+                                >
+                                  View / Download
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-slate-400">No URL</span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -1941,15 +1968,106 @@ export default function TeacherDetailPage({
         </div>
       )}
 
+      {/* TAB 7: TIMETABLE */}
+      {activeTab === "timetable" && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
+                  Teaching Timetable & Period Allocations
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Scheduled teaching periods, rooms, and weekly class slots for {teacher?.fullName}.
+                </p>
+              </div>
+              <Link
+                href={`/admin/timetable?teacherId=${teacherId}`}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition"
+              >
+                <Calendar className="w-4 h-4" /> Open Full Timetable Manager
+              </Link>
+            </div>
+
+            {isTimetableLoading ? (
+              <div className="py-12 text-center">
+                <RotateCw className="w-6 h-6 animate-spin text-indigo-600 mx-auto mb-2" />
+                <p className="text-xs text-slate-500">Loading teaching schedule...</p>
+              </div>
+            ) : !timetableData || (timetableData.entries && timetableData.entries.length === 0) ? (
+              <div className="text-center py-12 px-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 space-y-3">
+                <Calendar className="w-10 h-10 text-slate-400 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  No Timetable Slots Scheduled
+                </h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  There are no scheduled teaching periods allocated for this teacher in the active academic year.
+                </p>
+                <Link
+                  href="/admin/timetable"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold text-xs rounded-xl shadow-sm hover:bg-indigo-700 transition mt-2"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Schedule Slots in Timetable
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                        <th className="py-3 px-4">Day</th>
+                        <th className="py-3 px-4">Time Window</th>
+                        <th className="py-3 px-4">Class & Section</th>
+                        <th className="py-3 px-4">Subject</th>
+                        <th className="py-3 px-4">Room / Lab</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {timetableData.entries?.map((slot: any) => (
+                        <tr
+                          key={slot._id || slot.id}
+                          className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition"
+                        >
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                            <span className="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[11px]">
+                              {slot.dayOfWeek}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-semibold text-slate-700 dark:text-slate-300">
+                            {slot.startTime} – {slot.endTime}
+                          </td>
+                          <td className="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                            {slot.classId?.name || "Class"} {slot.sectionId ? `- Sec ${slot.sectionId.name}` : ""}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-indigo-600 dark:text-indigo-400">
+                            {slot.subjectId?.name || "Subject"}{" "}
+                            {slot.subjectId?.code ? `(${slot.subjectId.code})` : ""}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                            {slot.room || "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* PLACEHOLDER TABS */}
-      {["attendance", "timetable"].includes(activeTab) && (
+      {activeTab === "attendance" && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
           <Sparkles className="w-12 h-12 text-indigo-500 mx-auto" />
           <h3 className="text-lg font-black text-slate-900 dark:text-white capitalize">
-            {activeTab} Module
+            Attendance Module
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            This module will integrate with Teacher Management in its dedicated phase. Teacher academic assignments created in Phase A3 serve as the foundation.
+            Teacher attendance tracking will be integrated in its dedicated phase.
           </p>
         </div>
       )}

@@ -14,6 +14,7 @@ import {
   CreditCard,
   Clock,
   UserX,
+  CalendarX,
   Bell,
   Calendar,
   BarChart3,
@@ -24,7 +25,7 @@ import {
   School as SchoolIcon,
   Sparkles,
   ShieldCheck,
-  Menu,
+  FileSpreadsheet,
   X,
   Building2,
 } from "lucide-react";
@@ -131,19 +132,16 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Fee Management",
         href: "/admin/fees",
         icon: CreditCard,
-        isComingSoon: true,
       },
       {
         label: "Timetable",
         href: "/admin/timetable",
         icon: Clock,
-        isComingSoon: true,
       },
       {
-        label: "Staff Leave",
-        href: "/admin/leave",
-        icon: UserX,
-        isComingSoon: true,
+        label: "Leave Management",
+        href: "/admin/leaves",
+        icon: CalendarX,
       },
     ],
   },
@@ -154,7 +152,11 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Notices & Circulars",
         href: "/admin/notices",
         icon: Bell,
-        isComingSoon: true,
+      },
+      {
+        label: "Notification Center",
+        href: "/admin/notifications",
+        icon: Bell,
       },
       {
         label: "Academic Calendar",
@@ -165,13 +167,17 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "REPORTS",
+    title: "REPORTS & DATA",
     items: [
       {
         label: "Reports & Analytics",
         href: "/admin/reports",
         icon: BarChart3,
-        isComingSoon: true,
+      },
+      {
+        label: "Import & Export",
+        href: "/admin/import-export",
+        icon: FileSpreadsheet,
       },
     ],
   },

@@ -25,45 +25,59 @@ import {
 } from "lucide-react";
 
 interface AcademicYear {
-  _id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  isCurrent: boolean;
+  status?: string;
+  isCurrent?: boolean;
 }
 
 interface ClassItem {
-  _id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  code: string;
+  code?: string;
+  sections?: SectionItem[];
 }
 
 interface SectionItem {
-  _id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  classId: string;
+  code?: string;
+  classId?: string;
 }
 
 interface ExamSummary {
-  _id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  academicYearId: any;
+  academicYearId?: any;
   status: "DRAFT" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "RESULTS_PUBLISHED" | "ARCHIVED";
 }
 
 interface StudentResultRow {
-  studentId: string;
-  admissionNumber: string;
-  rollNumber?: string;
-  name: string;
-  profileImage?: string | null;
-  class: { _id: string; name: string; code: string } | null;
-  section: { _id: string; name: string } | null;
-  status: "DRAFT" | "REVIEWED" | "PUBLISHED";
-  totalObtained: number;
-  totalMaximum: number;
+  student: {
+    id: string;
+    name: string;
+    admissionNumber?: string;
+    rollNumber?: string;
+    photo?: string | null;
+    class?: { id?: string; _id?: string; name: string; code?: string } | null;
+    section?: { id?: string; _id?: string; name: string } | null;
+  };
+  totalObtainedMarks: number;
+  totalMaximumMarks: number;
   percentage: number;
   overallGrade: string;
   isPassed: boolean;
-  allSubjectsGraded: boolean;
+  statusText?: string;
+  subjectsCount?: number;
+  enteredCount?: number;
+  unenteredCount?: number;
+  passedSubjectsCount?: number;
+  failedSubjectsCount?: number;
+  status: "DRAFT" | "REVIEWED" | "PUBLISHED";
   subjects: Array<{
     subjectId: string;
     subjectName: string;
@@ -79,12 +93,13 @@ interface StudentResultRow {
 
 interface ResultsPayload {
   exam: ExamSummary;
-  metrics: {
+  summary?: {
     totalStudents: number;
-    evaluatedCount: number;
-    publishedCount: number;
-    averagePercentage: number;
-    passPercentage: number;
+    publishedStudents: number;
+    reviewedStudents: number;
+    draftStudents: number;
+    passedStudents: number;
+    failedStudents: number;
   };
   results: StudentResultRow[];
 }
@@ -109,66 +124,112 @@ export default function AdminResultsPage() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  // 1. Initial Meta Load (Academic Years, Classes, Sections)
+  // 1. Initial Load (Academic Years)
   useEffect(() => {
-    async function loadMeta() {
+    async function loadAcademicYears() {
       try {
-        const [yearsRes, classesRes, sectionsRes] = await Promise.all([
-          fetch("/api/admin/academics/academic-years"),
-          fetch("/api/admin/academics/classes"),
-          fetch("/api/admin/academics/sections"),
-        ]);
+        const yearsRes = await fetch("/api/admin/academic-years");
+        const yearsData = await yearsRes.json();
 
-        const [yearsData, classesData, sectionsData] = await Promise.all([
-          yearsRes.json(),
-          classesRes.json(),
-          sectionsRes.json(),
-        ]);
-
-        if (yearsData.success && Array.isArray(yearsData.data)) {
-          setAcademicYears(yearsData.data);
-          const current = yearsData.data.find((y: AcademicYear) => y.isCurrent) || yearsData.data[0];
-          if (current) setSelectedYear(current._id);
-        }
-
-        if (classesData.success && Array.isArray(classesData.data)) {
-          setClasses(classesData.data);
-        }
-
-        if (sectionsData.success && Array.isArray(sectionsData.data)) {
-          setSections(sectionsData.data);
+        if (yearsData.success && yearsData.data) {
+          const list: AcademicYear[] = yearsData.data.academicYears || (Array.isArray(yearsData.data) ? yearsData.data : []);
+          setAcademicYears(list);
+          const current = list.find((y) => y.status === "ACTIVE" || y.isCurrent) || list[0];
+          if (current) {
+            setSelectedYear(current.id || current._id || "");
+          }
         }
       } catch (err) {
-        console.error("Failed to load initial metadata", err);
+        console.error("Failed to load academic years", err);
       }
     }
-    loadMeta();
+    loadAcademicYears();
   }, []);
 
-  // 2. Load Exams when Year changes
+  // 2. Load Exams & Classes when Year changes
   useEffect(() => {
-    if (!selectedYear) return;
-    async function loadExams() {
+    if (!selectedYear) {
+      setExams([]);
+      setSelectedExamId("");
+      setClasses([]);
+      setSelectedClassId("");
+      setSections([]);
+      setSelectedSectionId("");
+      setPayload(null);
+      return;
+    }
+
+    async function loadYearData() {
       try {
-        const res = await fetch(`/api/admin/exams?academicYearId=${selectedYear}`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          setExams(data.data);
-          if (data.data.length > 0) {
-            setSelectedExamId(data.data[0]._id);
+        const [examsRes, classesRes] = await Promise.all([
+          fetch(`/api/admin/exams?academicYearId=${selectedYear}`),
+          fetch(`/api/admin/classes?academicYearId=${selectedYear}`),
+        ]);
+
+        const [examsData, classesData] = await Promise.all([
+          examsRes.json(),
+          classesRes.json(),
+        ]);
+
+        if (examsData.success && examsData.data) {
+          const list: ExamSummary[] = examsData.data.exams || (Array.isArray(examsData.data) ? examsData.data : []);
+          setExams(list);
+          if (list.length > 0) {
+            setSelectedExamId(list[0].id || list[0]._id || "");
           } else {
             setSelectedExamId("");
             setPayload(null);
           }
+        } else {
+          setExams([]);
+          setSelectedExamId("");
+          setPayload(null);
+        }
+
+        if (classesData.success && classesData.data) {
+          const classList: ClassItem[] = classesData.data.classes || (Array.isArray(classesData.data) ? classesData.data : []);
+          setClasses(classList);
+        } else {
+          setClasses([]);
         }
       } catch (err) {
-        console.error("Failed to load exams", err);
+        console.error("Failed to load year exams and classes", err);
+        setExams([]);
+        setSelectedExamId("");
+        setClasses([]);
+        setPayload(null);
       }
     }
-    loadExams();
+    loadYearData();
   }, [selectedYear]);
 
-  // 3. Fetch Results
+  // 3. Update Sections when Class selection changes
+  useEffect(() => {
+    if (!selectedClassId) {
+      setSections([]);
+      setSelectedSectionId("");
+      return;
+    }
+
+    const currentClass = classes.find((c) => (c.id || c._id) === selectedClassId);
+    if (currentClass?.sections && currentClass.sections.length > 0) {
+      setSections(currentClass.sections);
+    } else {
+      fetch(`/api/admin/sections?classId=${selectedClassId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data?.sections) {
+            setSections(data.data.sections);
+          } else {
+            setSections([]);
+          }
+        })
+        .catch(() => setSections([]));
+    }
+    setSelectedSectionId("");
+  }, [selectedClassId, classes]);
+
+  // 4. Fetch Results
   const fetchResults = useCallback(async () => {
     if (!selectedExamId) {
       setPayload(null);
@@ -205,11 +266,6 @@ export default function AdminResultsPage() {
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
-
-  // Filter sections based on selected class
-  const filteredSections = selectedClassId
-    ? sections.filter((s) => s.classId === selectedClassId)
-    : sections;
 
   // Batch Status Update Action
   const handleBatchStatusUpdate = async (newStatus: "DRAFT" | "REVIEWED" | "PUBLISHED") => {
@@ -289,7 +345,11 @@ export default function AdminResultsPage() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked && payload?.results) {
-      setSelectedStudentIds(payload.results.map((r) => r.studentId));
+      setSelectedStudentIds(
+        payload.results
+          .map((r) => r.student?.id || (r as any).studentId)
+          .filter(Boolean)
+      );
     } else {
       setSelectedStudentIds([]);
     }
@@ -386,11 +446,18 @@ export default function AdminResultsPage() {
               }}
               className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
-              {academicYears.map((y) => (
-                <option key={y._id} value={y._id}>
-                  {y.name} {y.isCurrent ? "(Current)" : ""}
-                </option>
-              ))}
+              {academicYears.length === 0 ? (
+                <option value="">No sessions found</option>
+              ) : (
+                academicYears.map((y) => {
+                  const yId = y.id || y._id || "";
+                  return (
+                    <option key={yId} value={yId}>
+                      {y.name} {y.status === "ACTIVE" || y.isCurrent ? "(Current)" : ""}
+                    </option>
+                  );
+                })
+              )}
             </select>
           </div>
 
@@ -407,11 +474,14 @@ export default function AdminResultsPage() {
               {exams.length === 0 ? (
                 <option value="">No exams found for this year</option>
               ) : (
-                exams.map((ex) => (
-                  <option key={ex._id} value={ex._id}>
-                    {ex.name} ({ex.status})
-                  </option>
-                ))
+                exams.map((ex) => {
+                  const exId = ex.id || ex._id || "";
+                  return (
+                    <option key={exId} value={exId}>
+                      {ex.name} ({ex.status})
+                    </option>
+                  );
+                })
               )}
             </select>
           </div>
@@ -430,11 +500,14 @@ export default function AdminResultsPage() {
               className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="">All Classes</option>
-              {classes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name} ({c.code})
-                </option>
-              ))}
+              {classes.map((c) => {
+                const cId = c.id || c._id || "";
+                return (
+                  <option key={cId} value={cId}>
+                    {c.name} {c.code ? `(${c.code})` : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -450,11 +523,14 @@ export default function AdminResultsPage() {
               className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:bg-muted"
             >
               <option value="">All Sections</option>
-              {filteredSections.map((s) => (
-                <option key={s._id} value={s._id}>
-                  Section {s.name}
-                </option>
-              ))}
+              {sections.map((s) => {
+                const sId = s.id || s._id || "";
+                return (
+                  <option key={sId} value={sId}>
+                    Section {s.name}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -499,7 +575,7 @@ export default function AdminResultsPage() {
       </div>
 
       {/* KPI Summary Cards */}
-      {payload?.metrics && (
+      {payload && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card border border-border rounded-xl p-4 shadow-xs">
             <div className="flex items-center justify-between text-muted-foreground mb-1">
@@ -507,10 +583,10 @@ export default function AdminResultsPage() {
               <Users className="h-4 w-4 text-blue-500" />
             </div>
             <div className="text-2xl font-bold text-foreground">
-              {payload.metrics.totalStudents}
+              {payload.summary?.totalStudents ?? payload.results.length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {payload.metrics.evaluatedCount} evaluated
+              {payload.results.filter((r) => (r.enteredCount ?? 0) > 0).length} evaluated
             </p>
           </div>
 
@@ -520,10 +596,11 @@ export default function AdminResultsPage() {
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="text-2xl font-bold text-foreground">
-              {payload.metrics.publishedCount}
+              {payload.summary?.publishedStudents ??
+                payload.results.filter((r) => r.status === "PUBLISHED").length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              of {payload.metrics.totalStudents} candidates
+              of {payload.summary?.totalStudents ?? payload.results.length} candidates
             </p>
           </div>
 
@@ -533,7 +610,13 @@ export default function AdminResultsPage() {
               <TrendingUp className="h-4 w-4 text-indigo-500" />
             </div>
             <div className="text-2xl font-bold text-foreground">
-              {payload.metrics.averagePercentage.toFixed(1)}%
+              {payload.results.length > 0
+                ? (
+                    payload.results.reduce((acc, r) => acc + (r.percentage || 0), 0) /
+                    payload.results.length
+                  ).toFixed(1)
+                : "0.0"}
+              %
             </div>
             <p className="text-xs text-muted-foreground mt-1">Overall percentage</p>
           </div>
@@ -544,7 +627,15 @@ export default function AdminResultsPage() {
               <Percent className="h-4 w-4 text-amber-500" />
             </div>
             <div className="text-2xl font-bold text-foreground">
-              {payload.metrics.passPercentage.toFixed(1)}%
+              {(payload.summary?.totalStudents ?? payload.results.length) > 0
+                ? (
+                    ((payload.summary?.passedStudents ??
+                      payload.results.filter((r) => r.isPassed).length) /
+                      (payload.summary?.totalStudents ?? payload.results.length)) *
+                    100
+                  ).toFixed(1)
+                : "0.0"}
+              %
             </div>
             <p className="text-xs text-muted-foreground mt-1">Passing student ratio</p>
           </div>
@@ -650,10 +741,21 @@ export default function AdminResultsPage() {
               </thead>
               <tbody className="divide-y divide-border text-sm">
                 {payload.results.map((row) => {
-                  const isSelected = selectedStudentIds.includes(row.studentId);
+                  const student = row.student || {};
+                  const studentId = student.id || (row as any).studentId || "";
+                  const studentName = student.name || (row as any).name || "Student";
+                  const admissionNum = student.admissionNumber || (row as any).admissionNumber || "";
+                  const rollNum = student.rollNumber || (row as any).rollNumber || "";
+                  const photo = student.photo || (row as any).profileImage || null;
+                  const className = student.class?.name || (row as any).class?.name || "N/A";
+                  const sectionName = student.section?.name || (row as any).section?.name || "";
+                  const totalObtained = row.totalObtainedMarks ?? (row as any).totalObtained ?? 0;
+                  const totalMaximum = row.totalMaximumMarks ?? (row as any).totalMaximum ?? 0;
+                  const isSelected = selectedStudentIds.includes(studentId);
+
                   return (
                     <tr
-                      key={row.studentId}
+                      key={studentId || Math.random()}
                       className={`hover:bg-muted/30 transition-colors ${
                         isSelected ? "bg-primary/5" : ""
                       }`}
@@ -662,7 +764,7 @@ export default function AdminResultsPage() {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleStudentSelection(row.studentId)}
+                          onChange={() => toggleStudentSelection(studentId)}
                           className="rounded border-input text-primary focus:ring-primary"
                         />
                       </td>
@@ -670,21 +772,21 @@ export default function AdminResultsPage() {
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-primary/20">
-                            {row.profileImage ? (
+                            {photo ? (
                               <img
-                                src={row.profileImage}
-                                alt={row.name}
+                                src={photo}
+                                alt={studentName}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              row.name.charAt(0).toUpperCase()
+                              (studentName?.charAt(0) || "S").toUpperCase()
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-foreground">{row.name}</div>
+                            <div className="font-semibold text-foreground">{studentName}</div>
                             <div className="text-xs text-muted-foreground flex items-center gap-2">
-                              <span>Adm: {row.admissionNumber}</span>
-                              {row.rollNumber && <span>• Roll: {row.rollNumber}</span>}
+                              {admissionNum && <span>Adm: {admissionNum}</span>}
+                              {rollNum && <span>• Roll: {rollNum}</span>}
                             </div>
                           </div>
                         </div>
@@ -692,27 +794,27 @@ export default function AdminResultsPage() {
 
                       <td className="py-3.5 px-4 text-muted-foreground">
                         <span className="font-medium text-foreground">
-                          {row.class?.name || "N/A"}
+                          {className}
                         </span>
-                        {row.section?.name && (
+                        {sectionName && (
                           <span className="ml-1 text-xs px-2 py-0.5 rounded-md bg-muted border border-border">
-                            {row.section.name}
+                            {sectionName}
                           </span>
                         )}
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
                         <div className="font-semibold text-foreground">
-                          {row.totalObtained} / {row.totalMaximum}
+                          {totalObtained} / {totalMaximum}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {row.subjects.filter((s) => s.marks !== null).length} / {row.subjects.length} subjects
+                          {(row.subjects || []).filter((s) => s.marks !== null).length} / {(row.subjects || []).length} subjects
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
                         <span className="font-bold text-foreground">
-                          {row.percentage.toFixed(1)}%
+                          {(row.percentage || 0).toFixed(1)}%
                         </span>
                       </td>
 
@@ -725,7 +827,7 @@ export default function AdminResultsPage() {
                                 : "bg-destructive/10 text-destructive border border-destructive/20"
                             }`}
                           >
-                            {row.overallGrade}
+                            {row.overallGrade || "N/A"}
                           </span>
                         </div>
                       </td>
@@ -747,7 +849,7 @@ export default function AdminResultsPage() {
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link
-                            href={`/admin/results/${selectedExamId}/report-card/${row.studentId}`}
+                            href={`/admin/results/${selectedExamId}/report-card/${studentId}`}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
                             title="View Printable Report Card"
                           >
@@ -758,7 +860,7 @@ export default function AdminResultsPage() {
                           {row.status !== "PUBLISHED" ? (
                             <button
                               onClick={() =>
-                                handleSingleStudentStatusUpdate(row.studentId, "PUBLISHED")
+                                handleSingleStudentStatusUpdate(studentId, "PUBLISHED")
                               }
                               disabled={actionLoading}
                               className="p-1.5 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 rounded-md transition-colors cursor-pointer"
@@ -769,7 +871,7 @@ export default function AdminResultsPage() {
                           ) : (
                             <button
                               onClick={() =>
-                                handleSingleStudentStatusUpdate(row.studentId, "DRAFT")
+                                handleSingleStudentStatusUpdate(studentId, "DRAFT")
                               }
                               disabled={actionLoading}
                               className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded-md transition-colors cursor-pointer"

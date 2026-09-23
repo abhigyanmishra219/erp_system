@@ -25,6 +25,22 @@ export interface AttendanceCalculationOptions {
 }
 
 /**
+ * Calculates standardized attendance percentage given attended/present days and total working days.
+ * If workingDays <= 0, returns 0.
+ * Never returns NaN, Infinity, or falls back to 100 on division by zero.
+ */
+export function calculateAttendancePercentage(
+  presentDays: number,
+  workingDays: number
+): number {
+  if (!workingDays || workingDays <= 0 || !isFinite(workingDays) || isNaN(workingDays)) {
+    return 0;
+  }
+  const attended = Math.max(0, presentDays || 0);
+  return Number(((attended / workingDays) * 100).toFixed(1));
+}
+
+/**
  * Calculates standardized attendance summary metrics from an array of attendance records.
  * Only marked and eligible records are counted.
  *
@@ -70,7 +86,7 @@ export function calculateAttendanceSummary(
 
   const totalMarked = presentCount + absentCount + lateCount + leaveCount;
   const attendedCount = presentCount + lateCount;
-  const percentage = totalMarked > 0 ? Number(((attendedCount / totalMarked) * 100).toFixed(1)) : 0;
+  const percentage = calculateAttendancePercentage(attendedCount, totalMarked);
 
   return {
     totalMarked,

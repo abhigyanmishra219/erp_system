@@ -11,6 +11,9 @@ import Teacher from "@/models/Teacher";
 import Attendance from "@/models/Attendance";
 import Assignment from "@/models/Assignment";
 import StudyMaterial from "@/models/StudyMaterial";
+import StudentFeeAccount from "@/models/StudentFeeAccount";
+import FeePayment from "@/models/FeePayment";
+import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { normalizeAttendanceDate } from "@/lib/utils/date";
 
@@ -26,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   const today = normalizeAttendanceDate(new Date());
 
-  // Query real academic foundation, teachers, students, parent statistics, attendance, assignments, and study material
+  // Query real academic foundation, teachers, students, parent statistics, attendance, assignments, study material, and fee statistics
   const [
     activeAcademicYear,
     totalAcademicYears,
@@ -47,6 +50,8 @@ export async function GET(req: NextRequest) {
     totalAssignments,
     publishedAssignments,
     totalStudyMaterials,
+    feeStats,
+    feeCollected,
   ] = await Promise.all([
     AcademicYear.findOne({ schoolId, status: "ACTIVE" }).lean(),
     AcademicYear.countDocuments({ schoolId }),
@@ -67,6 +72,38 @@ export async function GET(req: NextRequest) {
     Assignment.countDocuments({ schoolId, isActive: true }),
     Assignment.countDocuments({ schoolId, isActive: true, status: "PUBLISHED" }),
     StudyMaterial.countDocuments({ schoolId, isActive: true }),
+    StudentFeeAccount.aggregate([
+      { $match: { schoolId: new mongoose.Types.ObjectId(schoolId) } },
+      {
+        $group: {
+          _id: null,
+          totalAssigned: { $sum: "$totalFee" },
+          totalPending: { $sum: "$pendingAmount" },
+          totalPaid: { $sum: "$paidAmount" },
+          totalAccounts: { $sum: 1 },
+          paidCount: { $sum: { $cond: [{ $eq: ["$status", "PAID"] }, 1, 0] } },
+          partialCount: { $sum: { $cond: [{ $eq: ["$status", "PARTIALLY_PAID"] }, 1, 0] } },
+          unpaidCount: {
+            $sum: {
+              $cond: [
+                { $or: [{ $eq: ["$status", "PENDING"] }, { $eq: ["$status", "OVERDUE"] }] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]),
+    FeePayment.aggregate([
+      { $match: { schoolId: new mongoose.Types.ObjectId(schoolId), status: "ACTIVE" } },
+      {
+        $group: {
+          _id: null,
+          totalCollected: { $sum: "$amount" },
+        },
+      },
+    ]),
   ]);
 
   let presentToday = 0;
@@ -193,6 +230,16 @@ export async function GET(req: NextRequest) {
     studyMaterial: {
       total: totalStudyMaterials,
     },
+    fees: {
+      totalAssigned: feeStats[0]?.totalAssigned || 0,
+      totalCollected: feeCollected[0]?.totalCollected || feeStats[0]?.totalPaid || 0,
+      totalRevenue: feeCollected[0]?.totalCollected || feeStats[0]?.totalPaid || 0,
+      totalPending: feeStats[0]?.totalPending || 0,
+      paidCount: feeStats[0]?.paidCount || 0,
+      partialCount: feeStats[0]?.partialCount || 0,
+      unpaidCount: feeStats[0]?.unpaidCount || 0,
+      totalAccounts: feeStats[0]?.totalAccounts || 0,
+    },
     setup: {
       items: setupItems,
       completedSteps,
@@ -208,8 +255,8 @@ export async function GET(req: NextRequest) {
       attendance: true,
       assignments: true,
       studyMaterial: true,
-      exams: false,
-      fees: false,
+      exams: true,
+      fees: true,
       timetable: false,
       leave: false,
       notices: false,

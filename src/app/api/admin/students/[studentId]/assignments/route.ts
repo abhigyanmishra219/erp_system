@@ -61,33 +61,61 @@ export async function GET(
       submissionMap.set(sub.assignmentId.toString(), sub);
     }
 
+    let submittedCount = 0;
+    let lateCount = 0;
+    let reviewedCount = 0;
+    let totalScorePercentageSum = 0;
+    let reviewedWithScoreCount = 0;
+
     const formattedList = assignments.map((a: any) => {
       const sub = submissionMap.get(a._id.toString());
+      if (sub) {
+        if (sub.status === "SUBMITTED") submittedCount++;
+        else if (sub.status === "LATE") lateCount++;
+        else if (sub.status === "REVIEWED") {
+          reviewedCount++;
+          if (typeof sub.marks === "number" && a.maximumMarks && a.maximumMarks > 0) {
+            totalScorePercentageSum += (sub.marks / a.maximumMarks) * 100;
+            reviewedWithScoreCount++;
+          }
+        }
+      }
+
       return {
         id: a._id.toString(),
+        assignmentId: a._id.toString(),
         title: a.title,
         description: a.description,
         subject: a.subjectId ? { id: a.subjectId._id?.toString(), name: a.subjectId.name, code: a.subjectId.code } : null,
-        teacher: a.teacherId ? { id: a.teacherId._id?.toString(), name: `${a.teacherId.firstName} ${a.teacherId.lastName}` } : null,
+        teacher: a.teacherId
+          ? {
+              id: a.teacherId._id?.toString(),
+              name: `${a.teacherId.firstName} ${a.teacherId.lastName}`.trim(),
+              firstName: a.teacherId.firstName,
+              lastName: a.teacherId.lastName,
+            }
+          : null,
         assignedDate: a.assignedDate,
         dueDate: a.dueDate,
         maximumMarks: a.maximumMarks,
+        totalMarks: a.maximumMarks,
+        status: sub ? sub.status : "PENDING",
         submission: sub
           ? {
               id: sub._id.toString(),
               status: sub.status,
               submittedAt: sub.submittedAt,
               marks: sub.marks,
+              marksObtained: sub.marks,
               feedback: sub.feedback,
             }
-          : {
-              status: "PENDING",
-              submittedAt: null,
-              marks: null,
-              feedback: "",
-            },
+          : null,
       };
     });
+
+    const total = assignments.length;
+    const pendingCount = total - (submittedCount + lateCount + reviewedCount);
+    const averagePercentage = reviewedWithScoreCount > 0 ? Math.round(totalScorePercentageSum / reviewedWithScoreCount) : null;
 
     return NextResponse.json({
       success: true,
@@ -96,6 +124,14 @@ export async function GET(
           id: student._id.toString(),
           name: `${student.firstName} ${student.lastName}`,
           admissionNumber: student.admissionNumber,
+        },
+        summary: {
+          total,
+          submitted: submittedCount + reviewedCount,
+          pending: Math.max(0, pendingCount),
+          late: lateCount,
+          reviewed: reviewedCount,
+          averagePercentage,
         },
         assignments: formattedList,
       },

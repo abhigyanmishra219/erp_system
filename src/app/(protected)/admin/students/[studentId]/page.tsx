@@ -281,6 +281,19 @@ export default function StudentDetailPage({
   const [examsData, setExamsData] = useState<any>(null);
   const [isExamsLoading, setIsExamsLoading] = useState(false);
 
+  const [feesData, setFeesData] = useState<any>(null);
+  const [isFeesLoading, setIsFeesLoading] = useState(false);
+  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({
+    amount: "",
+    paymentMode: "CASH" as "CASH" | "BANK_TRANSFER" | "CHEQUE" | "UPI" | "OTHER",
+    paymentDate: new Date().toISOString().split("T")[0],
+    referenceNumber: "",
+    bankName: "",
+    remarks: "",
+  });
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
+
   const fetchStudentAttendance = useCallback(async () => {
     if (!studentId) return;
     setIsAttendanceLoading(true);
@@ -329,6 +342,65 @@ export default function StudentDetailPage({
     }
   }, [studentId]);
 
+  const fetchStudentFees = useCallback(async () => {
+    if (!studentId) return;
+    setIsFeesLoading(true);
+    try {
+      const res = await fetch(`/api/admin/fees/students/${studentId}`);
+      const json = await res.json();
+      if (json.success) {
+        setFeesData(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load student fees:", err);
+    } finally {
+      setIsFeesLoading(false);
+    }
+  }, [studentId]);
+
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
+      alert("Please enter a valid payment amount");
+      return;
+    }
+    setIsRecordingPayment(true);
+    try {
+      const res = await fetch("/api/admin/fees/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId,
+          amount: Number(paymentForm.amount),
+          paymentMode: paymentForm.paymentMode,
+          paymentDate: paymentForm.paymentDate,
+          referenceNumber: paymentForm.referenceNumber || undefined,
+          bankName: paymentForm.bankName || undefined,
+          remarks: paymentForm.remarks || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Failed to record payment");
+      }
+      setIsRecordPaymentOpen(false);
+      setPaymentForm({
+        amount: "",
+        paymentMode: "CASH",
+        paymentDate: new Date().toISOString().split("T")[0],
+        referenceNumber: "",
+        bankName: "",
+        remarks: "",
+      });
+      fetchStudentFees();
+      fetchStudentData();
+    } catch (err: any) {
+      alert(err.message || "Failed to record payment");
+    } finally {
+      setIsRecordingPayment(false);
+    }
+  };
+
   useEffect(() => {
     fetchStudentData();
   }, [fetchStudentData]);
@@ -340,8 +412,10 @@ export default function StudentDetailPage({
       fetchStudentAssignments();
     } else if (activeTab === "exams") {
       fetchStudentExams();
+    } else if (activeTab === "fees") {
+      fetchStudentFees();
     }
-  }, [activeTab, fetchStudentAttendance, fetchStudentAssignments, fetchStudentExams]);
+  }, [activeTab, fetchStudentAttendance, fetchStudentAssignments, fetchStudentExams, fetchStudentFees]);
 
   // Load parents list when link modal opens
   const openLinkParentModal = async () => {
@@ -1306,37 +1380,39 @@ export default function StudentDetailPage({
                 <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
                   <span className="text-[11px] font-medium text-muted-foreground">Total Assigned</span>
                   <div className="text-lg font-bold text-foreground mt-0.5">
-                    {assignmentData.summary.total}
+                    {assignmentData.summary?.total ?? 0}
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
                   <span className="text-[11px] font-medium text-muted-foreground">Submitted</span>
                   <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    {assignmentData.summary.submitted}
+                    {assignmentData.summary?.submitted ?? 0}
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
                   <span className="text-[11px] font-medium text-muted-foreground">Pending</span>
                   <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                    {assignmentData.summary.pending}
+                    {assignmentData.summary?.pending ?? 0}
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
                   <span className="text-[11px] font-medium text-muted-foreground">Late Submissions</span>
                   <div className="text-lg font-bold text-red-600 dark:text-red-400 mt-0.5">
-                    {assignmentData.summary.late}
+                    {assignmentData.summary?.late ?? 0}
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
                   <span className="text-[11px] font-medium text-muted-foreground">Reviewed</span>
                   <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                    {assignmentData.summary.reviewed}
+                    {assignmentData.summary?.reviewed ?? 0}
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl border border-border bg-card shadow-sm">
                   <span className="text-[11px] font-medium text-muted-foreground">Average Score</span>
                   <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                    {assignmentData.summary.averagePercentage !== null ? `${assignmentData.summary.averagePercentage}%` : "N/A"}
+                    {assignmentData.summary?.averagePercentage !== null && assignmentData.summary?.averagePercentage !== undefined
+                      ? `${assignmentData.summary.averagePercentage}%`
+                      : "N/A"}
                   </div>
                 </div>
               </div>
@@ -1366,7 +1442,7 @@ export default function StudentDetailPage({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {assignmentData.assignments.map((item: any) => {
+                      {(assignmentData.assignments || []).map((item: any) => {
                         const statusColor =
                           item.status === "REVIEWED"
                             ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800"
@@ -1584,21 +1660,255 @@ export default function StudentDetailPage({
         </div>
       )}
 
-      {/* Tab 8: Fees Placeholder (Phase A7) */}
+      {/* Tab 8: Fee Records (Phase A7) */}
       {activeTab === "fees" && (
-        <div className="bg-card border border-border rounded-xl p-10 text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
-            <CreditCard className="w-7 h-7" />
-          </div>
-          <div className="space-y-1">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              Coming in Phase A7
-            </span>
-            <h3 className="text-lg font-bold text-foreground">Fee Collection & Financial Records</h3>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Student fee structures, online invoice payments, receipt generation, and fee discount waivers will be activated in Phase A7.
-            </p>
-          </div>
+        <div className="space-y-6">
+          {isFeesLoading ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <RotateCw className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Loading student fee records...</p>
+            </div>
+          ) : !feesData || (!feesData.account && (!feesData.assignments || feesData.assignments.length === 0)) ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center space-y-3 shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-foreground">No Fee Structure Assigned</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  No academic fee structures have been linked to this student yet. Assign a fee structure from the Fee Management console.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/admin/fees/assign"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Assign Fee Structure
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Financial Summary KPIs */}
+              <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-indigo-500" />
+                      Student Fee Account Status
+                    </h3>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        feesData.account?.status === "PAID"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : feesData.account?.status === "PARTIAL"
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                          : feesData.account?.status === "OVERDUE"
+                          ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                      }`}
+                    >
+                      {feesData.account?.status || "UNPAID"}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setPaymentForm((prev) => ({
+                        ...prev,
+                        amount: feesData.account?.pendingAmount ? String(feesData.account.pendingAmount) : "",
+                      }));
+                      setIsRecordPaymentOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Record Fee Payment
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3 bg-muted/40 rounded-lg border border-border">
+                    <span className="text-muted-foreground block text-[11px]">Total Net Fee</span>
+                    <span className="text-base font-bold text-foreground mt-0.5 block">
+                      ₹{(feesData.account?.totalFee || 0).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                    <span className="text-emerald-600 dark:text-emerald-400 block text-[11px]">Total Paid</span>
+                    <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                      ₹{(feesData.account?.paidAmount || 0).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-rose-500/5 rounded-lg border border-rose-500/20">
+                    <span className="text-rose-600 dark:text-rose-400 block text-[11px]">Remaining Dues</span>
+                    <span className="text-base font-bold text-rose-600 dark:text-rose-400 mt-0.5 block">
+                      ₹{(feesData.account?.pendingAmount || 0).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-muted/40 rounded-lg border border-border">
+                    <span className="text-muted-foreground block text-[11px]">Concessions / Waivers</span>
+                    <span className="text-base font-bold text-foreground mt-0.5 block">
+                      ₹{((feesData.account?.concessionAmount || 0) + (feesData.account?.discountAmount || 0)).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {feesData.account?.nextDueDate && (
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Next Due Date: <strong>{new Date(feesData.account.nextDueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong></span>
+                  </div>
+                )}
+              </div>
+
+              {/* Fee Structures Breakdown */}
+              <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-foreground">Assigned Fee Structures & Schedules</h3>
+                  <Link
+                    href="/admin/fees"
+                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Fee Hub &rarr;
+                  </Link>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-muted/50 border-b border-border text-muted-foreground font-semibold">
+                        <th className="py-2.5 px-4">Structure</th>
+                        <th className="py-2.5 px-4">Frequency</th>
+                        <th className="py-2.5 px-4 text-right">Base Amount</th>
+                        <th className="py-2.5 px-4 text-right">Net Amount</th>
+                        <th className="py-2.5 px-4 text-right">Paid</th>
+                        <th className="py-2.5 px-4 text-right">Pending</th>
+                        <th className="py-2.5 px-4 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {feesData.assignments?.map((item: any) => (
+                        <tr key={item._id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-foreground">
+                              {item.feeStructure?.name || "Fee Structure"}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground font-mono">
+                              {item.feeStructure?.code}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {item.feeStructure?.frequency || "ANNUAL"}
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-foreground">
+                            ₹{item.baseAmount?.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-3 px-4 text-right font-bold text-foreground">
+                            ₹{item.netAmount?.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-3 px-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">
+                            ₹{item.paidAmount?.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-3 px-4 text-right font-semibold text-rose-600 dark:text-rose-400">
+                            ₹{item.pendingAmount?.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                item.status === "PAID"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : item.status === "PARTIAL"
+                                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              }`}
+                            >
+                              {item.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Payment History Ledger */}
+              <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-foreground">Payment History Ledger</h3>
+                  <span className="text-xs text-muted-foreground">
+                    {feesData.payments?.length || 0} Transactions
+                  </span>
+                </div>
+                {feesData.payments && feesData.payments.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-muted/50 border-b border-border text-muted-foreground font-semibold">
+                          <th className="py-2.5 px-4">Receipt No</th>
+                          <th className="py-2.5 px-4">Payment Date</th>
+                          <th className="py-2.5 px-4">Mode</th>
+                          <th className="py-2.5 px-4">Reference / Bank</th>
+                          <th className="py-2.5 px-4 text-right">Amount (₹)</th>
+                          <th className="py-2.5 px-4">Collected By</th>
+                          <th className="py-2.5 px-4 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {feesData.payments.map((p: any) => (
+                          <tr key={p._id} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <Link
+                                href={`/admin/fees/receipts/${p._id}`}
+                                className="font-mono font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                              >
+                                {p.receiptNumber}
+                              </Link>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {new Date(p.paymentDate).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-semibold text-foreground uppercase text-[11px]">
+                                {p.paymentMode}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                              {p.referenceNumber || p.bankName || "—"}
+                            </td>
+                            <td className="py-3 px-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                              ₹{p.amount.toLocaleString("en-IN")}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {p.recordedBy?.name || "Admin"}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <Link
+                                href={`/admin/fees/receipts/${p._id}`}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                              >
+                                <FileText className="w-3.5 h-3.5" /> Receipt
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-xs text-muted-foreground">
+                    No payment transactions recorded for this student yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2070,6 +2380,142 @@ export default function StudentDetailPage({
                 I have copied these credentials
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Record Fee Payment */}
+      {isRecordPaymentOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-indigo-500" /> Record Fee Payment
+              </h3>
+              <button
+                onClick={() => setIsRecordPaymentOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePaymentSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-muted-foreground font-semibold mb-1">
+                  Payment Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  max={feesData?.account?.pendingAmount || 9999999}
+                  value={paymentForm.amount}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                  placeholder={`Max ₹${(feesData?.account?.pendingAmount || 0).toLocaleString("en-IN")}`}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Current pending balance: ₹{(feesData?.account?.pendingAmount || 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-semibold mb-1">
+                    Payment Mode *
+                  </label>
+                  <select
+                    value={paymentForm.paymentMode}
+                    onChange={(e) =>
+                      setPaymentForm({
+                        ...paymentForm,
+                        paymentMode: e.target.value as any,
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="CASH">Cash</option>
+                    <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                    <option value="CHEQUE">Cheque</option>
+                    <option value="UPI">UPI (Manual)</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-muted-foreground font-semibold mb-1">
+                    Payment Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={paymentForm.paymentDate}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {paymentForm.paymentMode !== "CASH" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-muted-foreground font-semibold mb-1">
+                      Txn / Cheque Ref No
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentForm.referenceNumber}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, referenceNumber: e.target.value })}
+                      placeholder="e.g. UTR49281923"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-muted-foreground font-semibold mb-1">
+                      Bank Name
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentForm.bankName}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, bankName: e.target.value })}
+                      placeholder="e.g. HDFC Bank"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-muted-foreground font-semibold mb-1">
+                  Remarks / Note
+                </label>
+                <input
+                  type="text"
+                  value={paymentForm.remarks}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, remarks: e.target.value })}
+                  placeholder="Optional cashier notes"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsRecordPaymentOpen(false)}
+                  className="px-4 py-2 border border-border rounded-lg font-semibold text-foreground hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRecordingPayment}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm"
+                >
+                  {isRecordingPayment ? "Recording..." : "Confirm & Record Payment"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

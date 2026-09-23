@@ -73,7 +73,15 @@ export const PERMISSIONS = {
   // Fees & Payments
   FEES_VIEW: "fees.view",
   FEES_CREATE: "fees.create",
+  FEES_EDIT: "fees.edit",
+  FEES_DELETE: "fees.delete",
+  FEE_CATEGORY_MANAGE: "fee.category.manage",
+  FEE_STRUCTURE_MANAGE: "fee.structure.manage",
+  FEE_ASSIGN_MANAGE: "fee.assignment.manage",
   PAYMENT_RECORD: "payment.record",
+  PAYMENT_VIEW: "payment.view",
+  RECEIPT_VIEW: "receipt.view",
+  RECEIPT_PRINT: "receipt.print",
 
   // Timetable
   TIMETABLE_VIEW: "timetable.view",
@@ -88,10 +96,34 @@ export const PERMISSIONS = {
   NOTICE_VIEW: "notice.view",
   NOTICE_CREATE: "notice.create",
   NOTICE_EDIT: "notice.edit",
+  NOTICE_PUBLISH: "notice.publish",
+  NOTICE_ARCHIVE: "notice.archive",
   NOTICE_DELETE: "notice.delete",
+
+  // Notifications
+  NOTIFICATION_VIEW: "notification.view",
+  NOTIFICATION_READ: "notification.read",
 
   // Reports & Analytics
   REPORTS_VIEW: "reports.view",
+  REPORTS_STUDENT_VIEW: "reports.student.view",
+  REPORTS_ATTENDANCE_VIEW: "reports.attendance.view",
+  REPORTS_FEE_VIEW: "reports.fee.view",
+  REPORTS_ACADEMIC_VIEW: "reports.academic.view",
+  REPORTS_EXPORT_PDF: "reports.export.pdf",
+  REPORTS_EXPORT_EXCEL: "reports.export.excel",
+
+  // Data Import & Export (Phase A11)
+  IMPORT_VIEW: "import.view",
+  IMPORT_CREATE: "import.create",
+  IMPORT_CONFIRM: "import.confirm",
+  EXPORT_STUDENTS: "export.students",
+  EXPORT_TEACHERS: "export.teachers",
+  EXPORT_PARENTS: "export.parents",
+  EXPORT_ATTENDANCE: "export.attendance",
+  EXPORT_FEES: "export.fees",
+  EXPORT_RESULTS: "export.results",
+  EXPORT_REPORTS: "export.reports",
 
   // School Settings & Administration
   SETTINGS_VIEW: "settings.view",
@@ -126,6 +158,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.LEAVE_VIEW,
     PERMISSIONS.LEAVE_APPLY,
     PERMISSIONS.NOTICE_VIEW,
+    PERMISSIONS.NOTIFICATION_VIEW,
+    PERMISSIONS.NOTIFICATION_READ,
   ],
   STUDENT: [
     PERMISSIONS.ACADEMICS_VIEW,
@@ -139,6 +173,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.LEAVE_VIEW,
     PERMISSIONS.LEAVE_APPLY,
     PERMISSIONS.NOTICE_VIEW,
+    PERMISSIONS.NOTIFICATION_VIEW,
+    PERMISSIONS.NOTIFICATION_READ,
   ],
   PARENT: [
     PERMISSIONS.STUDENT_VIEW,
@@ -153,6 +189,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.LEAVE_VIEW,
     PERMISSIONS.LEAVE_APPLY,
     PERMISSIONS.NOTICE_VIEW,
+    PERMISSIONS.NOTIFICATION_VIEW,
+    PERMISSIONS.NOTIFICATION_READ,
   ],
 };
 

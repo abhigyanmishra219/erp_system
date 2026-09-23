@@ -32,9 +32,46 @@ export default function AdminHeader({
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState<any[]>([]);
+  const [isNotifLoading, setIsNotifLoading] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch("/api/admin/notifications/unread-count");
+      const json = await res.json();
+      if (json.success && typeof json.data?.unreadCount === "number") {
+        setUnreadCount(json.data.unreadCount);
+      }
+    } catch {
+      // Ignore background fetch error
+    }
+  };
+
+  const fetchRecentNotifications = async () => {
+    try {
+      setIsNotifLoading(true);
+      const res = await fetch("/api/admin/notifications?limit=5");
+      const json = await res.json();
+      if (json.success && json.data?.notifications) {
+        setRecentNotifications(json.data.notifications);
+        setUnreadCount(json.data.unreadCount ?? 0);
+      }
+    } catch {
+      // Ignore error
+    } finally {
+      setIsNotifLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // 30s background poll
+    return () => clearInterval(interval);
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -51,6 +88,39 @@ export default function AdminHeader({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleToggleNotifications = () => {
+    const nextState = !isNotificationsOpen;
+    setIsNotificationsOpen(nextState);
+    if (nextState) {
+      fetchRecentNotifications();
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch("/api/admin/notifications/read-all", { method: "POST" });
+      setUnreadCount(0);
+      setRecentNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch {
+      // Ignore error
+    }
+  };
+
+  const handleNotificationClick = async (notif: any) => {
+    if (!notif.isRead) {
+      try {
+        await fetch(`/api/admin/notifications/${notif._id}/read`, { method: "PATCH" });
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setRecentNotifications((prev) =>
+          prev.map((n) => (n._id === notif._id ? { ...n, isRead: true } : n))
+        );
+      } catch {
+        // Ignore error
+      }
+    }
+    setIsNotificationsOpen(false);
+  };
+
   const getPageTitle = () => {
     if (pathname === "/admin" || pathname === "/admin/dashboard") return "School Dashboard";
     if (pathname === "/admin/profile") return "My Profile & Account";
@@ -58,6 +128,8 @@ export default function AdminHeader({
     if (pathname.startsWith("/admin/academics")) return "Academics";
     if (pathname.startsWith("/admin/students")) return "Student Directory";
     if (pathname.startsWith("/admin/teachers")) return "Teachers & Staff";
+    if (pathname.startsWith("/admin/notices")) return "Notices & Circulars";
+    if (pathname.startsWith("/admin/notifications")) return "Notification Center";
     return "School ERP Workspace";
   };
 
@@ -98,27 +170,96 @@ export default function AdminHeader({
           </span>
         </div>
 
-        {/* Notifications Dropdown Foundation */}
+        {/* Notifications Dropdown */}
         <div className="relative" ref={notifRef}>
           <button
-            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            onClick={handleToggleNotifications}
             className="p-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-muted-foreground hover:text-foreground border border-border relative transition-all cursor-pointer"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-primary text-primary-foreground min-w-[18px] text-center shadow-xs">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
 
           {isNotificationsOpen && (
-            <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-popover border border-border shadow-2xl p-4 space-y-3 z-50 text-xs">
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <span className="font-bold text-foreground">Notifications</span>
-                <span className="text-[10px] text-primary font-mono font-semibold">0 unread</span>
+            <div className="absolute right-0 mt-2 w-80 sm:w-88 rounded-2xl bg-popover border border-border shadow-2xl p-4 space-y-3 z-50 text-xs">
+              <div className="flex items-center justify-between border-b border-border pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-foreground">Notifications</span>
+                  {unreadCount > 0 && (
+                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
-              <div className="py-6 text-center text-muted-foreground space-y-1">
-                <Bell className="w-6 h-6 text-muted-foreground/40 mx-auto" />
-                <p className="text-xs font-medium text-foreground">No new alerts</p>
-                <p className="text-[10px]">Important school notices and alerts will appear here.</p>
+
+              {isNotifLoading ? (
+                <div className="py-6 text-center text-muted-foreground text-[11px]">
+                  Loading alerts...
+                </div>
+              ) : recentNotifications.length === 0 ? (
+                <div className="py-6 text-center text-muted-foreground space-y-1">
+                  <Bell className="w-6 h-6 text-muted-foreground/40 mx-auto" />
+                  <p className="text-xs font-semibold text-foreground">No alerts</p>
+                  <p className="text-[10px]">Important school notices and alerts will appear here.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border -mx-2 max-h-72 overflow-y-auto">
+                  {recentNotifications.map((n) => (
+                    <Link
+                      key={n._id}
+                      href={n.actionUrl || "/admin/notifications"}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`block p-2.5 hover:bg-surface-2 transition rounded-xl mx-1 ${
+                        !n.isRead ? "bg-primary/5 font-medium" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <span
+                          className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                            !n.isRead ? "bg-primary" : "bg-transparent"
+                          }`}
+                        />
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <p className="text-xs font-bold text-foreground truncate">{n.title}</p>
+                          <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            {n.message}
+                          </p>
+                          <span className="text-[9px] text-muted-foreground block pt-0.5">
+                            {new Date(n.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-border text-center">
+                <Link
+                  href="/admin/notifications"
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="text-xs font-bold text-primary hover:underline"
+                >
+                  Open Notification Center &rarr;
+                </Link>
               </div>
             </div>
           )}

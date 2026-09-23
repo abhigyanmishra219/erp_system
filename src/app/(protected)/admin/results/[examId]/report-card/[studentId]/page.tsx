@@ -393,27 +393,42 @@ export default function PrintableReportCardPage() {
       </div>
 
       {/* Embedded Print CSS */}
-      <style jsx global>{`
-        @media print {
-          body {
-            background: white !important;
-            color: black !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          nav, aside, header, footer, .print\\:hidden {
-            display: none !important;
-          }
-          #printable-report-card {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-        }
-      `}</style>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              nav, aside, header, footer, .print\\:hidden, [role="navigation"] {
+                display: none !important;
+              }
+              #printable-report-card {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 10mm 12mm !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+              }
+              a[href]::after {
+                content: none !important;
+              }
+            }
+          `,
+        }}
+      />
     </div>
   );
 }
