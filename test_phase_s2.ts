@@ -426,6 +426,7 @@ async function runS2TestSuite() {
     if (failed > 0) {
       process.exit(1);
     }
+    process.exit(0);
   } catch (err) {
     console.error("❌ Fatal Error in S2 test suite:", err);
     process.exit(1);

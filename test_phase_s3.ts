@@ -484,6 +484,7 @@ async function runS3TestSuite() {
     if (failed > 0) {
       process.exit(1);
     }
+    process.exit(0);
   } catch (err) {
     console.error("❌ Fatal Error in S3 test suite:", err);
     process.exit(1);

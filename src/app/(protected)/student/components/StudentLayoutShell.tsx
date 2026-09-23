@@ -18,7 +18,7 @@ export default function StudentLayoutShell({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* Student Navigation Sidebar */}
       <StudentSidebar
         schoolName={schoolName}
@@ -28,14 +28,16 @@ export default function StudentLayoutShell({
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <StudentHeader
           schoolName={schoolName}
           onMenuClick={() => setIsMobileOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-200">
-          {children}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl w-full mx-auto animate-in fade-in duration-200">
+            {children}
+          </div>
         </main>
       </div>
     </div>

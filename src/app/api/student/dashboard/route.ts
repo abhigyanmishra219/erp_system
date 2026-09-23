@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
   const attendancePercentage =
     totalAttendanceDays > 0
       ? Math.round(((presentCount + lateCount) / totalAttendanceDays) * 100)
-      : 100;
+      : 0;
 
   const recentAttendance = attendanceRecords.slice(0, 7).map((rec: any) => ({
     _id: rec._id.toString(),

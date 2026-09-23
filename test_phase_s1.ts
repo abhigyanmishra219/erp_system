@@ -663,6 +663,7 @@ async function runS1TestSuite() {
     if (failed > 0) {
       process.exit(1);
     }
+    process.exit(0);
   } catch (err) {
     console.error("❌ Fatal Error in S1 test suite:", err);
     process.exit(1);

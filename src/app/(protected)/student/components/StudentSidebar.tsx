@@ -21,7 +21,6 @@ import {
   School as SchoolIcon,
   X,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
@@ -119,16 +118,6 @@ const NAV_SECTIONS: NavSection[] = [
       },
     ],
   },
-  {
-    title: "ACCOUNT",
-    items: [
-      {
-        label: "My Profile",
-        href: "/student/profile",
-        icon: User,
-      },
-    ],
-  },
 ];
 
 export default function StudentSidebar({
@@ -141,7 +130,7 @@ export default function StudentSidebar({
   const { user, logout } = useUser();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Load sidebar collapsed preference
+  // Load sidebar collapsed preference from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("erp_student_sidebar_collapsed");
@@ -177,7 +166,7 @@ export default function StudentSidebar({
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile Backdrop Overlay */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity"
@@ -185,18 +174,18 @@ export default function StudentSidebar({
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Aside Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out lg:static ${
-          isCollapsed ? "lg:w-20" : "lg:w-64"
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out lg:static ${
+          isCollapsed ? "lg:w-20" : "lg:w-[280px]"
         } ${
           isMobileOpen
-            ? "translate-x-0 w-72 shadow-2xl"
+            ? "translate-x-0 w-[280px] shadow-2xl"
             : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Header / School Branding */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
+        {/* 1. Header / School Branding (Fixed Top) */}
+        <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-sm shadow-primary/25">
               {schoolLogo ? (
@@ -206,16 +195,16 @@ export default function StudentSidebar({
                   className="w-full h-full rounded-xl object-cover"
                 />
               ) : (
-                <GraduationCap className="w-5 h-5" />
+                <SchoolIcon className="w-5 h-5" />
               )}
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <h2 className="text-sm font-bold text-sidebar-foreground truncate tracking-tight">
+                <h2 className="text-xs sm:text-sm font-bold text-sidebar-foreground truncate tracking-tight">
                   {schoolName}
                 </h2>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="inline-flex items-center px-1.5 py-0.2 rounded-md bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="inline-flex items-center px-1.5 py-0.2 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] font-bold uppercase tracking-wider">
                     Student Portal
                   </span>
                 </div>
@@ -234,12 +223,12 @@ export default function StudentSidebar({
           </button>
         </div>
 
-        {/* Navigation Sections */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-sidebar-border">
+        {/* 2. Navigation Sections (Scrollable Middle) */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-4">
           {NAV_SECTIONS.map((section) => (
             <div key={section.title} className="space-y-1">
               {!isCollapsed && (
-                <h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60 mb-2">
+                <h3 className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50">
                   {section.title}
                 </h3>
               )}
@@ -250,16 +239,16 @@ export default function StudentSidebar({
 
                   return (
                     <Link
-                      key={item.href + item.label}
+                      key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group relative focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary ${
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all group relative focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary ${
                         active
                           ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-surface-2 border border-transparent"
+                          : "text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-surface-2 border border-transparent"
                       }`}
                     >
                       <Icon
-                        className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                        className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
                           active
                             ? "text-primary-foreground"
                             : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
@@ -269,7 +258,7 @@ export default function StudentSidebar({
                         <span className="truncate">{item.label}</span>
                       )}
 
-                      {/* Tooltip for collapsed state */}
+                      {/* Tooltip for collapsed desktop view */}
                       {isCollapsed && (
                         <div className="absolute left-full ml-3 px-2.5 py-1.5 rounded-xl bg-popover text-popover-foreground text-[11px] font-medium shadow-lg border border-border opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">
                           {item.label}
@@ -283,10 +272,17 @@ export default function StudentSidebar({
           ))}
         </nav>
 
-        {/* Student Profile & Footer Action */}
-        <div className="p-3 border-t border-sidebar-border space-y-2">
+        {/* 3. Account / User Info & Logout (Fixed Bottom) */}
+        <div className="p-3 border-t border-sidebar-border bg-sidebar shrink-0 space-y-2">
+          {!isCollapsed && (
+            <h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50">
+              ACCOUNT
+            </h3>
+          )}
+
+          {/* User Profile Card */}
           {!isCollapsed && user && (
-            <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl bg-surface-1 border border-sidebar-border/60">
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-surface-1 border border-sidebar-border/60">
               <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center font-bold text-xs shrink-0 border border-primary/25">
                 {user.name ? user.name[0].toUpperCase() : "S"}
               </div>
@@ -301,6 +297,7 @@ export default function StudentSidebar({
             </div>
           )}
 
+          {/* Logout Action Button */}
           <button
             type="button"
             onClick={() => logout()}
@@ -310,10 +307,10 @@ export default function StudentSidebar({
             title="Log Out"
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            {!isCollapsed && <span>Log Out</span>}
+            {!isCollapsed && <span>Logout</span>}
           </button>
 
-          {/* Desktop Collapse Toggle */}
+          {/* Desktop Collapse/Expand Toggle Button */}
           <button
             type="button"
             onClick={toggleCollapse}
