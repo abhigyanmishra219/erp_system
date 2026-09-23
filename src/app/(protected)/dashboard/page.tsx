@@ -156,6 +156,30 @@ export default function DashboardPage() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
+        ) : user?.role === "TEACHER" ? (
+          <div className="p-6 rounded-2xl bg-card border border-amber-500/40 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 relative z-10">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                <span>Teacher Portal Active</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                Academic Faculty Workspace
+              </h2>
+              <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
+                Access your assigned classes, mark attendance, distribute coursework, record exam marks, and coordinate with students.
+              </p>
+            </div>
+
+            <Link
+              href="/teacher/dashboard"
+              className="px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-lg shadow-amber-600/20 flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Enter Teacher Portal</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         ) : null}
 
         {/* Welcome Card */}
