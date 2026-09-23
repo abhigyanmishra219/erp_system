@@ -63,10 +63,22 @@ export default function LoginPage() {
       login(data.user, data.token);
       setIsSuccess(true);
 
+      // Determine role-specific destination
+      let destination = "/dashboard";
+      if (data.user?.role === "STUDENT") {
+        destination = "/student/dashboard";
+      } else if (data.user?.role === "TEACHER") {
+        destination = "/teacher/dashboard";
+      } else if (data.user?.role === "ADMIN") {
+        destination = "/admin";
+      } else if (data.user?.role === "SYSTEM_ADMIN") {
+        destination = "/system-admin";
+      }
+
       // Redirect after brief visual feedback
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
+        router.push(destination);
+      }, 800);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to log in";
       setErrorMsg(msg);

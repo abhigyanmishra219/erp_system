@@ -77,7 +77,7 @@ export class LeaveService {
       const student = await Student.findOne({
         _id: studentId,
         schoolId: new mongoose.Types.ObjectId(schoolId),
-        isActive: true,
+        status: "ACTIVE",
       }).lean();
       if (!student) throw new Error("Student record not found in this school");
     } else if (applicantRole === "PARENT") {
@@ -85,7 +85,7 @@ export class LeaveService {
       const student = await Student.findOne({
         _id: studentId,
         schoolId: new mongoose.Types.ObjectId(schoolId),
-        isActive: true,
+        status: "ACTIVE",
       }).lean();
       if (!student) throw new Error("Selected student not found in this school");
 
@@ -111,7 +111,7 @@ export class LeaveService {
       const teacher = await Teacher.findOne({
         _id: teacherId,
         schoolId: new mongoose.Types.ObjectId(schoolId),
-        isActive: true,
+        status: "ACTIVE",
       }).lean();
       if (!teacher) throw new Error("Teacher record not found in this school");
     }

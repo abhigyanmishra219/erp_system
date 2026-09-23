@@ -218,3 +218,44 @@ export async function isTeacherClassTeacher(params: {
   const count = await TeacherAssignment.countDocuments(query);
   return count > 0;
 }
+
+/**
+ * Validates if a teacher has authorization to teach a specific subject in a class (across any section).
+ * Used for study materials which are organized by Class and Subject.
+ */
+export async function verifyTeacherClassSubjectScope(params: {
+  schoolId: string;
+  teacherId: string;
+  classId: string;
+  subjectId: string;
+  academicYearId?: string;
+}): Promise<boolean> {
+  const { schoolId, teacherId, classId, subjectId, academicYearId } = params;
+  await connectToDatabase();
+
+  const query: Record<string, any> = {
+    schoolId,
+    teacherId,
+    classId,
+    isActive: true,
+  };
+
+  if (academicYearId) {
+    query.academicYearId = academicYearId;
+  }
+
+  const assignments = await TeacherAssignment.find(query).lean();
+  if (assignments.length === 0) return false;
+
+  return assignments.some((a: any) => {
+    // Exact subject match
+    if (a.subjectId && a.subjectId.toString() === subjectId.toString()) {
+      return true;
+    }
+    // Class Teacher authority covers all subjects in the class
+    if (a.isClassTeacher || a.assignmentType === "CLASS_TEACHER" || a.assignmentType === "BOTH") {
+      return !a.subjectId || a.subjectId.toString() === subjectId.toString();
+    }
+    return false;
+  });
+}

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Student from "@/models/Student";
 import Teacher from "@/models/Teacher";
+import TeacherAssignment from "@/models/TeacherAssignment";
 import Parent from "@/models/Parent";
 import StudentParent from "@/models/StudentParent";
 import Notice, { INotice } from "@/models/Notice";
@@ -101,6 +102,27 @@ export class NoticeAudienceService {
     } else if (targetType === "CLASS") {
       if (!notice.targetClassId) return [];
 
+      // Teachers assigned to this class
+      const teacherAllocations = await TeacherAssignment.find({
+        schoolId,
+        classId: notice.targetClassId,
+        isActive: true,
+      }).distinct("teacherId");
+
+      if (teacherAllocations.length > 0) {
+        const teachers = await Teacher.find({
+          _id: { $in: teacherAllocations },
+          schoolId,
+          status: "ACTIVE",
+          userId: { $ne: null },
+        })
+          .select("userId")
+          .lean();
+        teachers.forEach((t) => {
+          if (t.userId) recipientUserIds.add(t.userId.toString());
+        });
+      }
+
       // Students in this class
       const students = await Student.find({
         schoolId,
@@ -137,6 +159,27 @@ export class NoticeAudienceService {
       }
     } else if (targetType === "SECTION") {
       if (!notice.targetSectionId) return [];
+
+      // Teachers assigned to this section
+      const teacherAllocations = await TeacherAssignment.find({
+        schoolId,
+        sectionId: notice.targetSectionId,
+        isActive: true,
+      }).distinct("teacherId");
+
+      if (teacherAllocations.length > 0) {
+        const teachers = await Teacher.find({
+          _id: { $in: teacherAllocations },
+          schoolId,
+          status: "ACTIVE",
+          userId: { $ne: null },
+        })
+          .select("userId")
+          .lean();
+        teachers.forEach((t) => {
+          if (t.userId) recipientUserIds.add(t.userId.toString());
+        });
+      }
 
       // Students in this section
       const students = await Student.find({
@@ -209,19 +252,35 @@ export class NoticeAudienceService {
       return true;
     }
 
-    if (notice.targetType === "TEACHERS") {
+    if (notice.targetType === "TEACHERS" || (notice.targetRoles && notice.targetRoles.includes("TEACHER"))) {
       return user.role === "TEACHER";
     }
 
-    if (notice.targetType === "STUDENTS") {
+    if (notice.targetType === "STUDENTS" || (notice.targetRoles && notice.targetRoles.includes("STUDENT"))) {
       return user.role === "STUDENT";
     }
 
-    if (notice.targetType === "PARENTS") {
+    if (notice.targetType === "PARENTS" || (notice.targetRoles && notice.targetRoles.includes("PARENT"))) {
       return user.role === "PARENT";
     }
 
     if (notice.targetType === "CLASS") {
+      if (user.role === "TEACHER") {
+        const teacher = await Teacher.findOne({
+          schoolId: user.schoolId,
+          userId: user.id,
+        }).lean();
+        if (!teacher) return false;
+
+        const hasAlloc = await TeacherAssignment.exists({
+          schoolId: user.schoolId,
+          teacherId: teacher._id,
+          classId: notice.targetClassId,
+          isActive: true,
+        });
+        return !!hasAlloc;
+      }
+
       if (user.role === "STUDENT") {
         const student = await Student.findOne({
           schoolId: user.schoolId,
@@ -255,6 +314,22 @@ export class NoticeAudienceService {
     }
 
     if (notice.targetType === "SECTION") {
+      if (user.role === "TEACHER") {
+        const teacher = await Teacher.findOne({
+          schoolId: user.schoolId,
+          userId: user.id,
+        }).lean();
+        if (!teacher) return false;
+
+        const hasAlloc = await TeacherAssignment.exists({
+          schoolId: user.schoolId,
+          teacherId: teacher._id,
+          sectionId: notice.targetSectionId,
+          isActive: true,
+        });
+        return !!hasAlloc;
+      }
+
       if (user.role === "STUDENT") {
         const student = await Student.findOne({
           schoolId: user.schoolId,

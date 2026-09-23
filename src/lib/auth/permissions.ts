@@ -154,6 +154,22 @@ export const PERMISSIONS = {
   TEACHER_NOTICE_VIEW: "teacher.notice.view",
   TEACHER_PROFILE_VIEW: "teacher.profile.view",
   TEACHER_PROFILE_EDIT: "teacher.profile.edit",
+
+  // Student Portal Specific Canonical Permissions (Phase S0)
+  STUDENT_DASHBOARD_VIEW: "student.dashboard.view",
+  STUDENT_PROFILE_VIEW: "student.profile.view",
+  STUDENT_PROFILE_EDIT: "student.profile.edit",
+  STUDENT_ATTENDANCE_VIEW: "student.attendance.view",
+  STUDENT_ASSIGNMENT_VIEW: "student.assignment.view",
+  STUDENT_ASSIGNMENT_SUBMIT: "student.assignment.submit",
+  STUDENT_STUDY_MATERIAL_VIEW: "student.study_material.view",
+  STUDENT_EXAM_VIEW: "student.exam.view",
+  STUDENT_RESULT_VIEW: "student.result.view",
+  STUDENT_REPORT_CARD_VIEW: "student.report_card.view",
+  STUDENT_FEE_VIEW: "student.fee.view",
+  STUDENT_TIMETABLE_VIEW: "student.timetable.view",
+  STUDENT_NOTICE_VIEW: "student.notice.view",
+  STUDENT_NOTIFICATION_VIEW: "student.notification.view",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -226,6 +242,21 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.NOTICE_VIEW,
     PERMISSIONS.NOTIFICATION_VIEW,
     PERMISSIONS.NOTIFICATION_READ,
+    // Student specific tokens
+    PERMISSIONS.STUDENT_DASHBOARD_VIEW,
+    PERMISSIONS.STUDENT_PROFILE_VIEW,
+    PERMISSIONS.STUDENT_PROFILE_EDIT,
+    PERMISSIONS.STUDENT_ATTENDANCE_VIEW,
+    PERMISSIONS.STUDENT_ASSIGNMENT_VIEW,
+    PERMISSIONS.STUDENT_ASSIGNMENT_SUBMIT,
+    PERMISSIONS.STUDENT_STUDY_MATERIAL_VIEW,
+    PERMISSIONS.STUDENT_EXAM_VIEW,
+    PERMISSIONS.STUDENT_RESULT_VIEW,
+    PERMISSIONS.STUDENT_REPORT_CARD_VIEW,
+    PERMISSIONS.STUDENT_FEE_VIEW,
+    PERMISSIONS.STUDENT_TIMETABLE_VIEW,
+    PERMISSIONS.STUDENT_NOTICE_VIEW,
+    PERMISSIONS.STUDENT_NOTIFICATION_VIEW,
   ],
   PARENT: [
     PERMISSIONS.STUDENT_VIEW,

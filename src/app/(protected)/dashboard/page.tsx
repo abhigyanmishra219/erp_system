@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   LogOut,
@@ -20,7 +21,20 @@ import { useUser } from "@/context/UserContext";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, logout } = useUser();
+
+  useEffect(() => {
+    if (user?.role === "STUDENT") {
+      router.replace("/student/dashboard");
+    } else if (user?.role === "TEACHER") {
+      router.replace("/teacher/dashboard");
+    } else if (user?.role === "ADMIN") {
+      router.replace("/admin");
+    } else if (user?.role === "SYSTEM_ADMIN") {
+      router.replace("/system-admin");
+    }
+  }, [user?.role, router]);
 
   const getRoleBadgeColor = (role?: string) => {
     switch (role) {
@@ -177,6 +191,30 @@ export default function DashboardPage() {
             >
               <GraduationCap className="w-4 h-4" />
               <span>Enter Teacher Portal</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        ) : user?.role === "STUDENT" ? (
+          <div className="p-6 rounded-2xl bg-card border border-emerald-500/40 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 relative z-10">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                <span>Student Portal Active</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                Student Learning Console
+              </h2>
+              <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
+                View your daily timetable, check attendance records, submit assignments, track exam schedules, and view published report cards.
+              </p>
+            </div>
+
+            <Link
+              href="/student/dashboard"
+              className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Enter Student Portal</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
