@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const auth = await requireStudent(req);
   if (!auth.success) return auth.response;
 
-  const { student, schoolId } = auth.context;
+  const { student, schoolId, classId, sectionId, academicYearId } = auth.context;
 
   await connectToDatabase();
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const filterStatus = searchParams.get("status"); // e.g. "PRESENT", "ABSENT"
 
   // 1. Resolve Academic Year Context
-  let targetYearId = student.academicYearId;
+  let targetYearId = academicYearId || student.academicYearId;
 
   if (requestedYearId) {
     // Verify requested academic year belongs to this school
@@ -38,8 +38,8 @@ export async function GET(req: NextRequest) {
 
   // 2. Fetch Academic Details (Class, Section, Academic Year)
   const [classDoc, sectionDoc, currentYearDoc, allSchoolYears] = await Promise.all([
-    Class.findById(student.classId).select("name code").lean(),
-    Section.findById(student.sectionId).select("name").lean(),
+    Class.findById(classId).select("name code").lean(),
+    Section.findById(sectionId).select("name").lean(),
     AcademicYear.findById(targetYearId).select("name startDate endDate status").lean(),
     AcademicYear.find({ schoolId }).select("name startDate endDate status").sort({ startDate: -1 }).lean(),
   ]);
@@ -160,17 +160,17 @@ export async function GET(req: NextRequest) {
     data: {
       academicContext: {
         academicYear: {
-          _id: targetYearId.toString(),
+          _id: targetYearId ? targetYearId.toString() : "",
           name: currentYearDoc?.name || "N/A",
           status: currentYearDoc?.status || "ACTIVE",
         },
         class: {
-          _id: student.classId.toString(),
+          _id: classId ? classId.toString() : "",
           name: classDoc?.name || "N/A",
           code: classDoc?.code || "",
         },
         section: {
-          _id: student.sectionId.toString(),
+          _id: sectionId ? sectionId.toString() : "",
           name: sectionDoc?.name || "N/A",
         },
         availableAcademicYears: allSchoolYears.map((y: any) => ({
@@ -186,3 +186,17 @@ export async function GET(req: NextRequest) {
     },
   });
 }
+
+export async function POST() {
+  return NextResponse.json({ success: false, message: "Method Not Allowed" }, { status: 405 });
+}
+export async function PUT() {
+  return NextResponse.json({ success: false, message: "Method Not Allowed" }, { status: 405 });
+}
+export async function PATCH() {
+  return NextResponse.json({ success: false, message: "Method Not Allowed" }, { status: 405 });
+}
+export async function DELETE() {
+  return NextResponse.json({ success: false, message: "Method Not Allowed" }, { status: 405 });
+}
+

@@ -169,9 +169,14 @@ export default function StudentDashboardPage() {
       setLoading(true);
       setError(null);
       const res = await fetch("/api/student/dashboard");
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || "Failed to load dashboard data");
+      let result: any = null;
+      try {
+        result = await res.json();
+      } catch (jsonErr) {
+        throw new Error(res.statusText || `Server returned error (${res.status})`);
+      }
+      if (!res.ok || !result?.success) {
+        throw new Error(result?.message || "Failed to load dashboard data");
       }
       setData(result.data);
     } catch (err: any) {

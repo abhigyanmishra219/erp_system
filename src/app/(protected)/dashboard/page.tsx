@@ -33,6 +33,8 @@ export default function DashboardPage() {
       router.replace("/admin");
     } else if (user?.role === "SYSTEM_ADMIN") {
       router.replace("/system-admin");
+    } else if (user?.role === "PARENT") {
+      router.replace("/parent/dashboard");
     }
   }, [user?.role, router]);
 
@@ -215,6 +217,30 @@ export default function DashboardPage() {
             >
               <GraduationCap className="w-4 h-4" />
               <span>Enter Student Portal</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        ) : user?.role === "PARENT" ? (
+          <div className="p-6 rounded-2xl bg-card border border-cyan-500/40 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 relative z-10">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                <span>Parent Portal Active</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                Guardian Learning Console
+              </h2>
+              <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
+                Monitor your children's daily timetable, attendance records, exam schedules, fee receipts, and school circulars.
+              </p>
+            </div>
+
+            <Link
+              href="/parent/dashboard"
+              className="px-5 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-semibold shadow-lg shadow-cyan-600/20 flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            >
+              <Users className="w-4 h-4" />
+              <span>Enter Parent Portal</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

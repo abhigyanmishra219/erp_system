@@ -143,6 +143,7 @@ export class NotificationService {
     userId: string | mongoose.Types.ObjectId,
     options: {
       isRead?: boolean;
+      type?: NotificationType;
       page?: number;
       limit?: number;
     } = {}
@@ -165,6 +166,10 @@ export class NotificationService {
 
     if (options.isRead !== undefined) {
       query.isRead = options.isRead;
+    }
+
+    if (options.type) {
+      query.type = options.type;
     }
 
     const [notifications, total, unreadCount] = await Promise.all([
@@ -238,5 +243,22 @@ export class NotificationService {
     );
 
     return result.modifiedCount;
+  }
+
+  /**
+   * Deletes an individual notification for an authenticated user.
+   */
+  public static async deleteNotification(
+    schoolId: string | mongoose.Types.ObjectId,
+    userId: string | mongoose.Types.ObjectId,
+    notificationId: string | mongoose.Types.ObjectId
+  ): Promise<boolean> {
+    const result = await Notification.deleteOne({
+      _id: notificationId,
+      schoolId,
+      recipientUserId: userId,
+    });
+
+    return result.deletedCount > 0;
   }
 }

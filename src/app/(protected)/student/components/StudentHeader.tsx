@@ -38,7 +38,7 @@ export default function StudentHeader({
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await fetch("/api/admin/notifications/unread-count");
+      const res = await fetch("/api/student/notifications/unread-count");
       const json = await res.json();
       if (json.success && typeof json.data?.unreadCount === "number") {
         setUnreadCount(json.data.unreadCount);
@@ -51,7 +51,7 @@ export default function StudentHeader({
   const fetchRecentNotifications = async () => {
     try {
       setIsNotifLoading(true);
-      const res = await fetch("/api/admin/notifications?limit=5");
+      const res = await fetch("/api/student/notifications?limit=5");
       const json = await res.json();
       if (json.success && json.data?.notifications) {
         setRecentNotifications(json.data.notifications);

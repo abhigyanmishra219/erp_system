@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const auth = await requireStudent(req);
   if (!auth.success) return auth.response;
 
-  const { student, schoolId } = auth.context;
+  const { student, schoolId, classId, sectionId, academicYearId } = auth.context;
 
   await connectToDatabase();
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const filterStatus = searchParams.get("status"); // e.g. "PENDING", "SUBMITTED", "LATE", "REVIEWED", "OVERDUE"
 
   // 1. Resolve Academic Year Context
-  let targetYearId = student.academicYearId;
+  let targetYearId = academicYearId || student.academicYearId;
   if (requestedYearId) {
     const validYear = await AcademicYear.findOne({
       _id: requestedYearId,
@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
   const assignmentQuery: Record<string, any> = {
     schoolId,
     academicYearId: targetYearId,
-    classId: student.classId,
-    sectionId: student.sectionId,
+    classId,
+    sectionId,
     status: "PUBLISHED",
     isActive: true,
   };

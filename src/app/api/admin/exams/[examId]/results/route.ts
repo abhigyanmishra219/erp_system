@@ -11,6 +11,7 @@ import School from "@/models/School";
 import AuditLog from "@/models/AuditLog";
 import { updateResultStatusSchema } from "@/lib/validation/exam";
 import { ResultCalculationService, SubjectResultInput } from "@/lib/services/resultCalculationService";
+import { NotificationService } from "@/lib/services/notificationService";
 
 export async function GET(
   req: NextRequest,
@@ -291,6 +292,38 @@ export async function PATCH(
     }
 
     const resultUpdate = await ExamResult.updateMany(updateFilter, { $set: updateFields });
+
+    // If published, notify all affected students
+    if (validated.status === "PUBLISHED") {
+      try {
+        const updatedStudentIds = await ExamResult.find(updateFilter).distinct("studentId");
+        if (updatedStudentIds.length > 0) {
+          const students = await Student.find({
+            _id: { $in: updatedStudentIds },
+            schoolId,
+          })
+            .select("_id userId")
+            .lean();
+
+          for (const stu of students) {
+            if (stu.userId) {
+              await NotificationService.createNotification({
+                schoolId,
+                recipientUserId: (stu.userId as any)._id?.toString() || stu.userId.toString(),
+                type: "RESULT",
+                title: "Report Card Published",
+                message: `Your report card for ${exam.name} has been published.`,
+                referenceType: "EXAM",
+                referenceId: examId,
+                actionUrl: `/student/report-cards`,
+              });
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error("Failed to create result publication notifications:", notifErr);
+      }
+    }
 
     // Determine audit event action
     let auditAction = "RESULT_REVIEWED";
