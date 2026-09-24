@@ -731,7 +731,7 @@ export default function StudentDetailPage({
             { id: "attendance", label: "Attendance", icon: Calendar },
             { id: "assignments", label: "Assignments", icon: FileText },
             { id: "exams", label: "Exams & Results", icon: Award },
-            { id: "fees", label: "Fee Records", icon: CreditCard, tag: "Phase A7" },
+            { id: "fees", label: "Fee Records", icon: CreditCard },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -747,11 +747,6 @@ export default function StudentDetailPage({
               >
                 <Icon className="w-3.5 h-3.5" />
                 {tab.label}
-                {tab.tag && (
-                  <span className="text-[10px] bg-muted px-1.5 py-0.2 rounded font-normal text-muted-foreground">
-                    {tab.tag}
-                  </span>
-                )}
               </button>
             );
           })}

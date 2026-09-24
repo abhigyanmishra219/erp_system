@@ -21,8 +21,12 @@ import {
   School as SchoolIcon,
   X,
   LogOut,
+  Lock,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import { SchoolModule } from "@/lib/subscription";
+import { useSubscription } from "@/context/SubscriptionContext";
+import { useSchoolBranding } from "@/context/SchoolBrandingContext";
 
 interface StudentSidebarProps {
   schoolName?: string;
@@ -35,6 +39,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  moduleKey?: SchoolModule;
 }
 
 interface NavSection {
@@ -65,31 +70,37 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Attendance",
         href: "/student/attendance",
         icon: CalendarCheck,
+        moduleKey: "ATTENDANCE",
       },
       {
         label: "Assignments",
         href: "/student/assignments",
         icon: FileText,
+        moduleKey: "ASSIGNMENTS",
       },
       {
         label: "Study Material",
         href: "/student/study-material",
         icon: BookOpen,
+        moduleKey: "STUDY_MATERIAL",
       },
       {
         label: "Exams",
         href: "/student/exams",
         icon: Award,
+        moduleKey: "EXAMS",
       },
       {
         label: "Results",
         href: "/student/results",
         icon: TrendingUp,
+        moduleKey: "RESULTS",
       },
       {
         label: "Report Cards",
         href: "/student/report-cards",
         icon: GraduationCap,
+        moduleKey: "RESULTS",
       },
     ],
   },
@@ -100,21 +111,25 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Timetable",
         href: "/student/timetable",
         icon: Clock,
+        moduleKey: "TIMETABLE",
       },
       {
         label: "Fees",
         href: "/student/fees",
         icon: CreditCard,
+        moduleKey: "FEES",
       },
       {
         label: "Notices",
         href: "/student/notices",
         icon: Bell,
+        moduleKey: "NOTICES",
       },
       {
         label: "Notifications",
         href: "/student/notifications",
         icon: Inbox,
+        moduleKey: "NOTIFICATIONS",
       },
     ],
   },
@@ -129,6 +144,10 @@ export default function StudentSidebar({
   const pathname = usePathname();
   const { user, logout } = useUser();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { hasModuleAccess, openLockedModal } = useSubscription();
+  const { branding } = useSchoolBranding();
+
+  const effectiveLogo = branding.logo || schoolLogo;
 
   // Load sidebar collapsed preference from localStorage
   useEffect(() => {
@@ -187,10 +206,10 @@ export default function StudentSidebar({
         {/* 1. Header / School Branding (Fixed Top) */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-sm shadow-primary/25">
-              {schoolLogo ? (
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-sm shadow-primary/25 overflow-hidden">
+              {effectiveLogo ? (
                 <img
-                  src={schoolLogo}
+                  src={effectiveLogo}
                   alt={schoolName}
                   className="w-full h-full rounded-xl object-cover"
                 />
@@ -236,6 +255,40 @@ export default function StudentSidebar({
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
+                  const isLocked = item.moduleKey ? !hasModuleAccess(item.moduleKey) : false;
+
+                  if (isLocked) {
+                    return (
+                      <button
+                        type="button"
+                        key={item.label}
+                        onClick={() => {
+                          if (item.moduleKey) {
+                            openLockedModal(item.moduleKey);
+                          }
+                        }}
+                        title={
+                          isCollapsed
+                            ? `${item.label} (Plan Required - Locked)`
+                            : "Plan Required - Click to view details"
+                        }
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-sidebar-foreground/45 hover:text-sidebar-foreground/70 hover:bg-surface-2/60 transition-all group relative cursor-pointer"
+                      >
+                        <Icon className="w-4 h-4 shrink-0 text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60" />
+                        {!isCollapsed && (
+                          <span className="truncate flex-1 text-left">
+                            {item.label}
+                          </span>
+                        )}
+                        {!isCollapsed && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Plan Req</span>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  }
 
                   return (
                     <Link

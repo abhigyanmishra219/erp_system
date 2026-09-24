@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudent } from "@/lib/auth/requireStudent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import StudentFeeAccount from "@/models/StudentFeeAccount";
 import FeePayment from "@/models/FeePayment";
@@ -12,19 +13,10 @@ export async function GET(req: NextRequest) {
     const auth = await requireStudent(req);
     if (!auth.success) return auth.response;
 
+    const subCheck = requireModule(auth.context.school, "FEES");
+    if (!subCheck.allowed) return subCheck.response;
+
     const { school, schoolId, studentId, academicYearId } = auth.context;
-
-    // 1. Feature Flag Check: Ensure School has 'FEES' module enabled
-    const isFeeEnabled = Array.isArray(school.enabledModules) && school.enabledModules.includes("FEES");
-
-    if (!isFeeEnabled) {
-      return NextResponse.json({
-        success: true,
-        isEnabled: false,
-        message: "Fees module is not enabled for your school institution.",
-        data: null,
-      });
-    }
 
     await connectToDatabase();
 

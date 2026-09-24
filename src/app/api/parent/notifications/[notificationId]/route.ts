@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import { NotificationService } from "@/lib/services/notificationService";
 
 export async function PATCH(
@@ -11,6 +12,9 @@ export async function PATCH(
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "NOTIFICATIONS");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, user } = auth.context;
     const { notificationId } = await params;
@@ -56,6 +60,9 @@ export async function DELETE(
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "NOTIFICATIONS");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, user } = auth.context;
     const { notificationId } = await params;

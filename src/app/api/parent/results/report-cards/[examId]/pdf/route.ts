@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import { ReportCardService } from "@/lib/services/reportCardService";
 import { ReportCardPdfService } from "@/lib/services/reportCardPdfService";
@@ -12,6 +13,9 @@ export async function GET(
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "RESULTS");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, childIds } = auth.context;
     const { examId } = await params;

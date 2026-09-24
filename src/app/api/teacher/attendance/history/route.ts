@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
+import { requireModule } from "@/lib/subscription-guard";
 import { verifyTeacherSectionScope } from "@/lib/auth/teacherScope";
 import connectToDatabase from "@/lib/db";
 import Attendance from "@/models/Attendance";
@@ -13,6 +14,9 @@ import { getMonthDateRange, getDaysInMonth, normalizeAttendanceDate, formatAtten
 export async function GET(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "ATTENDANCE");
+  if (!subCheck.allowed) return subCheck.response!;
 
   const { teacher, schoolId } = auth.context;
   const teacherIdStr = teacher._id.toString();

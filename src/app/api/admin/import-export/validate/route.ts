@@ -59,6 +59,20 @@ export async function POST(req: NextRequest) {
 
     if (session.type === "STUDENTS") {
       validationResult = await StudentImportValidator.validateRows(schoolId, transformedRows);
+
+      // Validate subscription student capacity
+      const activeRows = validationResult.validRows.filter((r) => (r.data?.status || "ACTIVE") === "ACTIVE");
+      const { checkStudentCapacity } = await import("@/lib/subscription-guard");
+      const capacityCheck = await checkStudentCapacity(schoolId, activeRows.length);
+
+      if (!capacityCheck.allowed) {
+        validationResult.errors.push({
+          rowNumber: 0,
+          field: "subscriptionLimit",
+          message: `Subscription capacity exceeded: ${capacityCheck.remaining} student slots available, but ${activeRows.length} active students requested. Plan limit: ${capacityCheck.limit}, Current active: ${capacityCheck.currentCount}.`,
+        });
+        session.errorMessage = `Subscription capacity exceeded (${activeRows.length} requested vs ${capacityCheck.remaining} available).`;
+      }
     } else if (session.type === "PARENTS") {
       validationResult = await ParentImportValidator.validateRows(schoolId, transformedRows);
     } else if (session.type === "TEACHERS") {

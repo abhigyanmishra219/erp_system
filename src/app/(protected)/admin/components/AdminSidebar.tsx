@@ -13,7 +13,6 @@ import {
   Award,
   CreditCard,
   Clock,
-  UserX,
   CalendarX,
   Bell,
   Calendar,
@@ -23,12 +22,15 @@ import {
   ChevronLeft,
   ChevronRight,
   School as SchoolIcon,
-  Sparkles,
   ShieldCheck,
   FileSpreadsheet,
   X,
   Building2,
+  Lock,
 } from "lucide-react";
+import { SchoolModule } from "@/lib/subscription";
+import { useSubscription } from "@/context/SubscriptionContext";
+import { useSchoolBranding } from "@/context/SchoolBrandingContext";
 
 interface AdminSidebarProps {
   schoolName?: string;
@@ -42,6 +44,7 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   isComingSoon?: boolean;
+  moduleKey?: SchoolModule;
 }
 
 interface NavSection {
@@ -107,41 +110,49 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Attendance",
         href: "/admin/attendance",
         icon: CalendarCheck,
+        moduleKey: "ATTENDANCE",
       },
       {
         label: "Assignments",
         href: "/admin/assignments",
         icon: FileText,
+        moduleKey: "ASSIGNMENTS",
       },
       {
         label: "Study Material",
         href: "/admin/study-material",
         icon: BookOpen,
+        moduleKey: "STUDY_MATERIAL",
       },
       {
         label: "Exams",
         href: "/admin/exams",
         icon: Award,
+        moduleKey: "EXAMS",
       },
       {
         label: "Results & Reports",
         href: "/admin/results",
         icon: GraduationCap,
+        moduleKey: "RESULTS",
       },
       {
         label: "Fee Management",
         href: "/admin/fees",
         icon: CreditCard,
+        moduleKey: "FEES",
       },
       {
         label: "Timetable",
         href: "/admin/timetable",
         icon: Clock,
+        moduleKey: "TIMETABLE",
       },
       {
         label: "Leave Management",
         href: "/admin/leaves",
         icon: CalendarX,
+        moduleKey: "LEAVE",
       },
     ],
   },
@@ -152,11 +163,13 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Notices & Circulars",
         href: "/admin/notices",
         icon: Bell,
+        moduleKey: "NOTICES",
       },
       {
         label: "Notification Center",
         href: "/admin/notifications",
         icon: Bell,
+        moduleKey: "NOTIFICATIONS",
       },
       {
         label: "Academic Calendar",
@@ -173,6 +186,7 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Reports & Analytics",
         href: "/admin/reports",
         icon: BarChart3,
+        moduleKey: "REPORTS",
       },
       {
         label: "Import & Export",
@@ -206,6 +220,10 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { hasModuleAccess, openLockedModal, subscription } = useSubscription();
+  const { branding } = useSchoolBranding();
+
+  const effectiveLogo = branding.logo || schoolLogo;
 
   // Load sidebar collapsed preference
   useEffect(() => {
@@ -256,11 +274,11 @@ export default function AdminSidebar({
         <div>
           <div className="p-4 border-b border-sidebar-border flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-md shadow-primary/25">
-                {schoolLogo ? (
+              <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-md shadow-primary/25 overflow-hidden">
+                {effectiveLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={schoolLogo}
+                    src={effectiveLogo}
                     alt={schoolName}
                     className="w-full h-full object-cover rounded-xl"
                   />
@@ -278,6 +296,11 @@ export default function AdminSidebar({
                     <span className="px-1.5 py-0.2 rounded bg-primary/15 text-primary font-bold text-[9px] uppercase tracking-wider font-mono">
                       ADMIN
                     </span>
+                    {subscription?.planName && (
+                      <span className="px-1.5 py-0.2 rounded bg-surface-2 text-muted-foreground font-semibold text-[8px] uppercase tracking-wider">
+                        {subscription.planName}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -286,7 +309,7 @@ export default function AdminSidebar({
             {/* Mobile close button */}
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="md:hidden p-1.5 rounded-lg bg-surface-2 text-muted-foreground hover:text-foreground border border-border"
+              className="md:hidden p-1.5 rounded-lg bg-surface-2 text-muted-foreground hover:text-foreground border border-border cursor-pointer"
               aria-label="Close navigation"
             >
               <X className="w-4 h-4" />
@@ -306,6 +329,7 @@ export default function AdminSidebar({
                 {section.items.map((item) => {
                   const active = isActive(item.href);
                   const Icon = item.icon;
+                  const isLocked = item.moduleKey ? !hasModuleAccess(item.moduleKey) : false;
 
                   if (item.isComingSoon) {
                     return (
@@ -331,6 +355,45 @@ export default function AdminSidebar({
                     );
                   }
 
+                  // Locked item due to subscription tier
+                  if (isLocked) {
+                    return (
+                      <button
+                        type="button"
+                        key={item.label}
+                        onClick={() => {
+                          if (item.moduleKey) {
+                            openLockedModal(item.moduleKey);
+                          }
+                        }}
+                        title={
+                          isCollapsed
+                            ? `${item.label} (Plan Required - Locked)`
+                            : "Plan Required - Click to view details"
+                        }
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-muted-foreground/60 hover:text-muted-foreground hover:bg-surface-2/60 transition-all duration-150 group cursor-pointer ${
+                          isCollapsed ? "justify-center" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground shrink-0" />
+                          {!isCollapsed && (
+                            <span className="truncate text-muted-foreground/70">
+                              {item.label}
+                            </span>
+                          )}
+                        </div>
+                        {!isCollapsed && (
+                          <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Plan Req</span>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  }
+
+                  // Normal accessible link
                   return (
                     <Link
                       key={item.href}

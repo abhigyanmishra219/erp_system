@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import Notice from "@/models/Notice";
 import AuditLog from "@/models/AuditLog";
 import { NotificationService } from "@/lib/services/notificationService";
@@ -12,6 +13,9 @@ export async function POST(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "NOTICES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId, user } = auth.context;
   const userId = user.id;

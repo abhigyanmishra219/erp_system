@@ -249,8 +249,16 @@ export async function PATCH(
     if (validatedData.gender !== undefined) student.gender = validatedData.gender;
     if (validatedData.bloodGroup !== undefined) student.bloodGroup = validatedData.bloodGroup;
     if (validatedData.avatarUrl !== undefined) student.avatarUrl = validatedData.avatarUrl;
-    if (validatedData.admissionDate !== undefined) student.admissionDate = new Date(validatedData.admissionDate);
-    if (validatedData.status !== undefined) student.status = validatedData.status;
+    if (validatedData.status !== undefined) {
+      if (validatedData.status === "ACTIVE" && student.status !== "ACTIVE") {
+        const { checkStudentCapacity } = await import("@/lib/subscription-guard");
+        const capacityCheck = await checkStudentCapacity(schoolId, 1);
+        if (!capacityCheck.allowed && capacityCheck.errorResponse) {
+          return capacityCheck.errorResponse;
+        }
+      }
+      student.status = validatedData.status;
+    }
 
     if (validatedData.address) {
       student.address = { ...student.address, ...validatedData.address };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import FeePayment from "@/models/FeePayment";
 import Student from "@/models/Student";
@@ -76,16 +77,10 @@ export async function GET(
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
 
-    const { school, schoolId, childIds } = auth.context;
+    const subCheck = requireModule(auth.context.school, "FEES");
+    if (!subCheck.allowed) return subCheck.response;
 
-    // 1. Feature Flag Check
-    const isFeeEnabled = Array.isArray(school.enabledModules) && school.enabledModules.includes("FEES");
-    if (!isFeeEnabled) {
-      return NextResponse.json(
-        { success: false, error: { code: "MODULE_DISABLED", message: "Fees module is not enabled for your school institution." } },
-        { status: 403 }
-      );
-    }
+    const { school, schoolId, childIds } = auth.context;
 
     if (!childIds || childIds.length === 0) {
       return NextResponse.json(

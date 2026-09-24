@@ -135,6 +135,14 @@
   --color-warning: var(--warning);
   --color-destructive: var(--destructive);
   --color-info: var(--info);
+  --color-school-primary: var(--school-primary);
+  --color-school-primary-hover: var(--school-primary-hover);
+  --color-school-primary-foreground: var(--school-primary-foreground);
+  --color-school-primary-light: var(--school-primary-light);
+  --color-school-secondary: var(--school-secondary);
+  --color-school-secondary-hover: var(--school-secondary-hover);
+  --color-school-secondary-foreground: var(--school-secondary-foreground);
+  --color-school-secondary-light: var(--school-secondary-light);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

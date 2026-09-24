@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import LeaveRequest from "@/models/LeaveRequest";
 import { LeaveService } from "@/lib/services/leaveService";
@@ -43,6 +44,9 @@ const teacherLeaveSubmitSchema = z.object({
 export async function GET(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "LEAVE");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { teacher, user, schoolId } = auth.context;
 
@@ -97,6 +101,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "LEAVE");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { teacher, user, schoolId } = auth.context;
 

@@ -29,6 +29,7 @@ import {
   FileText,
 } from "lucide-react";
 import { formatAttendanceDate } from "@/lib/utils/date";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 type AttendanceTab = "daily" | "monthly" | "student";
 type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "LEAVE";
@@ -464,7 +465,8 @@ export default function AdminAttendancePage() {
   ];
 
   return (
-    <div className="space-y-6 pb-12">
+    <LockedModuleGate moduleKey="ATTENDANCE">
+      <div className="space-y-6 pb-12">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -1469,6 +1471,7 @@ export default function AdminAttendancePage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

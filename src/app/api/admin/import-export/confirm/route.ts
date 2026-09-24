@@ -81,6 +81,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // If importing students, check capacity before execution
+    if (session.type === "STUDENTS") {
+      const activeRows = validDataList.filter((r: any) => (r.data?.status || "ACTIVE") === "ACTIVE");
+      const { checkStudentCapacity } = await import("@/lib/subscription-guard");
+      const capacityCheck = await checkStudentCapacity(schoolId, activeRows.length);
+
+      if (!capacityCheck.allowed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "STUDENT_LIMIT_REACHED",
+            message: `Importing ${activeRows.length} active students exceeds the subscription limit of ${capacityCheck.limit} (${capacityCheck.remaining} available slots, ${capacityCheck.currentCount} current active).`,
+            limit: capacityCheck.limit,
+            current: capacityCheck.currentCount,
+            available: capacityCheck.remaining,
+            requested: activeRows.length,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     session.status = "IMPORTING";
     await session.save();
 

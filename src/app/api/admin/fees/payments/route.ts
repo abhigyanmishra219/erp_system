@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { recordPaymentSchema } from "@/lib/validation/fee";
 import FeePayment from "@/models/FeePayment";
 import StudentFeeAccount from "@/models/StudentFeeAccount";
@@ -14,6 +15,9 @@ import connectToDatabase from "@/lib/db";
 export async function GET(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "FEES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId } = auth.context;
   const { searchParams } = new URL(req.url);
@@ -116,6 +120,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "FEES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { user, schoolId } = auth.context;
 

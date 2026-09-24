@@ -17,9 +17,12 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  School as SchoolIcon,
   X,
+  Lock,
 } from "lucide-react";
+import { SchoolModule } from "@/lib/subscription";
+import { useSubscription } from "@/context/SubscriptionContext";
+import { useSchoolBranding } from "@/context/SchoolBrandingContext";
 
 interface TeacherSidebarProps {
   schoolName?: string;
@@ -32,6 +35,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  moduleKey?: SchoolModule;
 }
 
 interface NavSection {
@@ -62,26 +66,31 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Attendance",
         href: "/teacher/attendance",
         icon: CalendarCheck,
+        moduleKey: "ATTENDANCE",
       },
       {
         label: "Assignments",
         href: "/teacher/assignments",
         icon: FileText,
+        moduleKey: "ASSIGNMENTS",
       },
       {
         label: "Study Material",
         href: "/teacher/study-material",
         icon: BookOpen,
+        moduleKey: "STUDY_MATERIAL",
       },
       {
         label: "Exams & Marks",
         href: "/teacher/exams",
         icon: Award,
+        moduleKey: "EXAMS",
       },
       {
         label: "Timetable",
         href: "/teacher/timetable",
         icon: Clock,
+        moduleKey: "TIMETABLE",
       },
     ],
   },
@@ -92,6 +101,7 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Notices",
         href: "/teacher/notices",
         icon: Bell,
+        moduleKey: "NOTICES",
       },
     ],
   },
@@ -102,6 +112,7 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Leave",
         href: "/teacher/leave",
         icon: CalendarX,
+        moduleKey: "LEAVE",
       },
       {
         label: "My Profile",
@@ -120,6 +131,10 @@ export default function TeacherSidebar({
 }: TeacherSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { hasModuleAccess, openLockedModal } = useSubscription();
+  const { branding } = useSchoolBranding();
+
+  const effectiveLogo = branding.logo || schoolLogo;
 
   useEffect(() => {
     try {
@@ -169,11 +184,11 @@ export default function TeacherSidebar({
         <div>
           <div className="p-4 border-b border-sidebar-border flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm shrink-0 shadow-md border border-amber-500/20">
-                {schoolLogo ? (
+              <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center font-bold text-sm shrink-0 shadow-md border border-primary/20 overflow-hidden">
+                {effectiveLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={schoolLogo}
+                    src={effectiveLogo}
                     alt={schoolName}
                     className="w-full h-full object-cover rounded-xl"
                   />
@@ -219,6 +234,44 @@ export default function TeacherSidebar({
                 {section.items.map((item) => {
                   const active = isActive(item.href);
                   const Icon = item.icon;
+                  const isLocked = item.moduleKey ? !hasModuleAccess(item.moduleKey) : false;
+
+                  if (isLocked) {
+                    return (
+                      <button
+                        type="button"
+                        key={item.label}
+                        onClick={() => {
+                          if (item.moduleKey) {
+                            openLockedModal(item.moduleKey);
+                          }
+                        }}
+                        title={
+                          isCollapsed
+                            ? `${item.label} (Plan Required - Locked)`
+                            : "Plan Required - Click to view details"
+                        }
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-muted-foreground/60 hover:text-muted-foreground hover:bg-surface-2/60 transition-all duration-150 group cursor-pointer ${
+                          isCollapsed ? "justify-center" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground shrink-0" />
+                          {!isCollapsed && (
+                            <span className="truncate text-muted-foreground/70">
+                              {item.label}
+                            </span>
+                          )}
+                        </div>
+                        {!isCollapsed && (
+                          <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Plan Req</span>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  }
 
                   return (
                     <Link

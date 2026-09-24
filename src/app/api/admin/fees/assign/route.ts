@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { assignFeeSchema } from "@/lib/validation/fee";
 import FeeStructure from "@/models/FeeStructure";
 import Student from "@/models/Student";
@@ -13,6 +14,9 @@ import connectToDatabase from "@/lib/db";
 export async function POST(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "FEES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { user, schoolId } = auth.context;
 

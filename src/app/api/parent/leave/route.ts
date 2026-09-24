@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import LeaveRequest from "@/models/LeaveRequest";
 import Student from "@/models/Student";
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "LEAVE");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, user, childIds } = auth.context;
 
@@ -113,6 +117,9 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "LEAVE");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, user, childIds } = auth.context;
 

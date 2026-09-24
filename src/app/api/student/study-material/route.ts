@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireStudent } from "@/lib/auth/requireStudent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import StudyMaterial, { StudyMaterialType } from "@/models/StudyMaterial";
 import AcademicYear from "@/models/AcademicYear";
@@ -10,6 +11,9 @@ import Class from "@/models/Class";
 export async function GET(req: NextRequest) {
   const auth = await requireStudent(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "STUDY_MATERIAL");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { student, schoolId } = auth.context;
 

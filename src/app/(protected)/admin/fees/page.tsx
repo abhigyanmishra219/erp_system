@@ -30,6 +30,7 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 interface AcademicYear {
   id: string;
@@ -495,7 +496,8 @@ export default function AdminFeesPage() {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <LockedModuleGate moduleKey="FEES">
+      <div className="space-y-6 pb-16">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
@@ -1700,6 +1702,7 @@ export default function AdminFeesPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

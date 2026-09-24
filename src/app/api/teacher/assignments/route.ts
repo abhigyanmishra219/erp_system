@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
+import { requireModule } from "@/lib/subscription-guard";
 import { getTeacherScope, verifyTeacherSubjectScope } from "@/lib/auth/teacherScope";
 import connectToDatabase from "@/lib/db";
 import Assignment from "@/models/Assignment";
@@ -14,6 +15,9 @@ import { createAssignmentSchema } from "@/lib/validation/assignment";
 export async function GET(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "ASSIGNMENTS");
+  if (!subCheck.allowed) return subCheck.response!;
 
   const { teacher, schoolId } = auth.context;
   const teacherIdStr = teacher._id.toString();
@@ -168,6 +172,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "ASSIGNMENTS");
+  if (!subCheck.allowed) return subCheck.response!;
 
   const { user, teacher, schoolId } = auth.context;
   const teacherIdStr = teacher._id.toString();

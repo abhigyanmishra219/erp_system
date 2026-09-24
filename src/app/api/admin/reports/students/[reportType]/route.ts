@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { ReportServices } from "@/lib/reports/reportServices";
 import { ReportExportService } from "@/lib/reports/reportExportService";
 import { BaseReportFilters, StudentReportType } from "@/lib/reports/types";
@@ -11,6 +12,9 @@ export async function GET(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "REPORTS");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { user, schoolId } = auth.context;
   const { reportType } = await params;

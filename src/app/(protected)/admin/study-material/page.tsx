@@ -22,6 +22,7 @@ import {
   Building2,
   FolderOpen,
 } from "lucide-react";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 interface AcademicYearOption {
   id: string;
@@ -333,7 +334,8 @@ export default function AdminStudyMaterialPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <LockedModuleGate moduleKey="STUDY_MATERIAL">
+      <div className="space-y-6 pb-12">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -731,6 +733,7 @@ export default function AdminStudyMaterialPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

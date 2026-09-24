@@ -111,7 +111,13 @@ export default async function SchoolAdminLayout({
   return (
     <AdminLayoutShell
       schoolName={schoolDoc.name}
-      schoolLogo={schoolDoc.logo}
+      schoolLogo={schoolDoc.logo || schoolDoc.branding?.logo}
+      initialBranding={{
+        logo: schoolDoc.logo || schoolDoc.branding?.logo || "",
+        favicon: schoolDoc.branding?.favicon || "",
+        primaryColor: schoolDoc.branding?.primaryColor || "",
+        secondaryColor: schoolDoc.branding?.secondaryColor || "",
+      }}
     >
       {children}
     </AdminLayoutShell>

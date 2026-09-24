@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import { NotificationService } from "@/lib/services/notificationService";
 
@@ -9,6 +10,9 @@ export async function POST(
 ) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "NOTIFICATIONS");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { user, schoolId } = auth.context;
   const { notificationId } = await props.params;

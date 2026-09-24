@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import Attendance from "@/models/Attendance";
 import Student from "@/models/Student";
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "ATTENDANCE");
+    if (!subCheck.allowed) return subCheck.response!;
 
     const { school, schoolId, linkedChildren, childIds } = auth.context;
 

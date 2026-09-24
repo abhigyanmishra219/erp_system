@@ -37,6 +37,28 @@ export async function PATCH(req: NextRequest) {
 
     await connectToDatabase();
 
+    const existingSchool = await School.findById(schoolId);
+    if (!existingSchool) {
+      return NextResponse.json(
+        { success: false, error: { code: "NOT_FOUND", message: "School not found" } },
+        { status: 404 }
+      );
+    }
+
+    // Clean up replaced or removed local assets from storage
+    if (existingSchool.branding?.logo && existingSchool.branding.logo !== validatedData.logo) {
+      if (existingSchool.branding.logo.startsWith("/uploads/branding/")) {
+        const { storageService } = await import("@/lib/storage");
+        await storageService.deleteBrandingAsset(existingSchool.branding.logo).catch(() => {});
+      }
+    }
+    if (existingSchool.branding?.favicon && existingSchool.branding.favicon !== validatedData.favicon) {
+      if (existingSchool.branding.favicon.startsWith("/uploads/branding/")) {
+        const { storageService } = await import("@/lib/storage");
+        await storageService.deleteBrandingAsset(existingSchool.branding.favicon).catch(() => {});
+      }
+    }
+
     const updatedSchool = await School.findByIdAndUpdate(
       schoolId,
       {

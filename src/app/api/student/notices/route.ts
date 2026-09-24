@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudent } from "@/lib/auth/requireStudent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import Notice from "@/models/Notice";
 
@@ -7,6 +8,9 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireStudent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "NOTICES");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, classId, sectionId } = auth.context;
 

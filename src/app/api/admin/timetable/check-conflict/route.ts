@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { checkTimetableConflictSchema } from "@/lib/validation/timetable";
 import { TimetableConflictService } from "@/lib/services/timetableConflictService";
 
 export async function POST(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "TIMETABLE");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId } = auth.context;
 

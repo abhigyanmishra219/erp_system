@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { rejectLeaveSchema } from "@/lib/validation/leave";
 import { LeaveService } from "@/lib/services/leaveService";
 
@@ -11,6 +12,9 @@ export async function POST(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "LEAVE");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId, user } = auth.context;
   const userId = user.id;

@@ -29,6 +29,7 @@ import {
   ReportColumn,
   ReportSummaryItem,
 } from "@/lib/reports/types";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 interface OptionItem {
   id: string;
@@ -409,7 +410,8 @@ export default function AdminReportsPage() {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <LockedModuleGate moduleKey="REPORTS">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* ========================================================================= */}
       {/* PRINT-ONLY HEADER */}
       {/* ========================================================================= */}
@@ -974,6 +976,7 @@ export default function AdminReportsPage() {
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

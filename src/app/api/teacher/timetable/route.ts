@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import AcademicYear from "@/models/AcademicYear";
 import TimetableEntry, { DAYS_OF_WEEK } from "@/models/TimetableEntry";
@@ -17,6 +18,9 @@ const DAYS_MAP = [
 export async function GET(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "TIMETABLE");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { teacher, schoolId } = auth.context;
 

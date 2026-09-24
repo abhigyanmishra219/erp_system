@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Building2,
 } from "lucide-react";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 interface NoticeItem {
   _id: string;
@@ -371,7 +372,8 @@ export default function AdminNoticesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <LockedModuleGate moduleKey="NOTICES">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
@@ -850,6 +852,7 @@ export default function AdminNoticesPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

@@ -22,6 +22,7 @@ import {
   Award,
 } from "lucide-react";
 import { formatAttendanceDate } from "@/lib/utils/date";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 interface AcademicYearOption {
   id: string;
@@ -428,7 +429,8 @@ export default function AdminAssignmentsPage() {
   const reviewedSubmissions = assignments.reduce((acc, a) => acc + a.submissionStats.reviewed, 0);
 
   return (
-    <div className="space-y-6 pb-12">
+    <LockedModuleGate moduleKey="ASSIGNMENTS">
+      <div className="space-y-6 pb-12">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -1018,6 +1020,7 @@ export default function AdminAssignmentsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

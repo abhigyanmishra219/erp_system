@@ -622,9 +622,31 @@ export default function SchoolAdminDashboardPage() {
                 <span className="font-bold text-foreground font-mono">{school.plan}</span>
               </div>
 
+              <div className="py-1.5 border-b border-border space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Students Capacity:</span>
+                  <span className="font-bold text-foreground font-mono">
+                    {data.students?.active ?? 0} / {school.studentLimit}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-600 transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, Math.round(((data.students?.active ?? 0) / (school.studentLimit || 1)) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground block text-right">
+                  {Math.round(((data.students?.active ?? 0) / (school.studentLimit || 1)) * 100)}% capacity used
+                </span>
+              </div>
+
               <div className="flex justify-between py-1.5 border-b border-border">
-                <span className="text-muted-foreground">Student Limit:</span>
-                <span className="font-bold text-foreground font-mono">{school.studentLimit} Students</span>
+                <span className="text-muted-foreground">Enabled Modules:</span>
+                <span className="font-bold text-foreground font-mono">
+                  {school.enabledModules.length} / 11 Modules
+                </span>
               </div>
 
               <div className="flex justify-between py-1.5 border-b border-border">

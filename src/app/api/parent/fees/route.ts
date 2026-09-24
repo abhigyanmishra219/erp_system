@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import StudentFeeAccount from "@/models/StudentFeeAccount";
 import FeePayment from "@/models/FeePayment";
@@ -14,6 +15,9 @@ export async function GET(req: NextRequest) {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
 
+    const subCheck = requireModule(auth.context.school, "FEES");
+    if (!subCheck.allowed) return subCheck.response;
+
     const { school, schoolId, linkedChildren, childIds } = auth.context;
 
     // 1. Check if parent has linked children
@@ -23,17 +27,6 @@ export async function GET(req: NextRequest) {
         hasChildren: false,
         isEnabled: true,
         message: "No linked children found for this parent account.",
-        data: null,
-      });
-    }
-
-    // 2. Feature Flag Check: Ensure School has 'FEES' module enabled
-    const isFeeEnabled = Array.isArray(school.enabledModules) && school.enabledModules.includes("FEES");
-    if (!isFeeEnabled) {
-      return NextResponse.json({
-        success: true,
-        isEnabled: false,
-        message: "Fees module is not enabled for your school institution.",
         data: null,
       });
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { TimetableService } from "@/lib/services/timetableService";
 import AcademicYear from "@/models/AcademicYear";
 import Teacher from "@/models/Teacher";
@@ -12,6 +13,9 @@ export async function GET(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "TIMETABLE");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId } = auth.context;
   const { teacherId } = await params;

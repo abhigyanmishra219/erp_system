@@ -21,6 +21,7 @@ import {
   AlertCircle,
   ChevronRight,
 } from "lucide-react";
+import LockedModuleGate from "@/components/subscription/LockedModuleGate";
 
 interface AcademicYear {
   id: string;
@@ -680,7 +681,8 @@ export default function AdminTimetablePage() {
   }, [entries]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <LockedModuleGate moduleKey="TIMETABLE">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -1254,6 +1256,7 @@ export default function AdminTimetablePage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LockedModuleGate>
   );
 }

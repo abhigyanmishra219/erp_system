@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import { updateFeeStructureSchema } from "@/lib/validation/fee";
 import FeeStructure from "@/models/FeeStructure";
 import AuditLog from "@/models/AuditLog";
@@ -12,6 +13,9 @@ export async function GET(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "FEES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId } = auth.context;
   const { structureId } = await params;
@@ -75,6 +79,9 @@ export async function PATCH(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "FEES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { user, schoolId } = auth.context;
   const { structureId } = await params;
@@ -159,6 +166,9 @@ export async function DELETE(
 ) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "FEES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { user, schoolId } = auth.context;
   const { structureId } = await params;

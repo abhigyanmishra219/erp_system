@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
+import { requireModule } from "@/lib/subscription-guard";
 import Notice from "@/models/Notice";
 import Class from "@/models/Class";
 import Section from "@/models/Section";
@@ -12,6 +13,9 @@ import { NotificationService } from "@/lib/services/notificationService";
 export async function GET(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "NOTICES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId } = auth.context;
 
@@ -147,6 +151,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "NOTICES");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { schoolId, user } = auth.context;
   const userId = user.id;

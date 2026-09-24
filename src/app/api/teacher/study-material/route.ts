@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
 import { getTeacherScope, verifyTeacherClassSubjectScope } from "@/lib/auth/teacherScope";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import StudyMaterial, { StudyMaterialType } from "@/models/StudyMaterial";
 import AcademicYear from "@/models/AcademicYear";
@@ -13,6 +14,9 @@ import { createStudyMaterialSchema } from "@/lib/validation/studyMaterial";
 export async function GET(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "STUDY_MATERIAL");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { teacher, schoolId, user } = auth.context;
   const teacherIdStr = teacher._id.toString();
@@ -255,6 +259,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "STUDY_MATERIAL");
+  if (!subCheck.allowed) return subCheck.response;
 
   const { teacher, schoolId, user } = auth.context;
   const teacherIdStr = teacher._id.toString();

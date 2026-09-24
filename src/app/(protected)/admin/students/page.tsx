@@ -21,7 +21,10 @@ import {
   BookOpen,
   Eye,
   Key,
+  AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 interface StudentItem {
   id: string;
@@ -60,6 +63,7 @@ interface ClassOpt {
 }
 
 export default function StudentsDirectoryPage() {
+  const { studentUsage, subscription } = useSubscription();
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -220,6 +224,52 @@ export default function StudentsDirectoryPage() {
           </Link>
         </div>
       </div>
+
+      {/* Subscription Capacity Bar & Warnings */}
+      {studentUsage.limit > 0 && (
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground">Student Capacity:</span>
+              <span className="font-mono text-muted-foreground">
+                <strong className="text-foreground">{studentUsage.current}</strong> / {studentUsage.limit} active students
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-surface-2 border border-border text-[10px] font-semibold">
+                {subscription?.planName || "Active Plan"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`font-semibold ${studentUsage.isAtLimit ? "text-rose-600 dark:text-rose-400" : studentUsage.isNearLimit ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+                {studentUsage.isAtLimit
+                  ? "Capacity Limit Reached"
+                  : `${studentUsage.percentage}% Used`}
+              </span>
+            </div>
+          </div>
+
+          <div className="w-full h-2 rounded-full bg-surface-3 overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 ${
+                studentUsage.isAtLimit
+                  ? "bg-rose-500"
+                  : studentUsage.isNearLimit
+                  ? "bg-amber-500"
+                  : "bg-indigo-600"
+              }`}
+              style={{ width: `${Math.min(100, studentUsage.percentage)}%` }}
+            />
+          </div>
+
+          {studentUsage.isAtLimit && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>
+                Your school subscription has reached its maximum allowance of <strong>{studentUsage.limit}</strong> active students. New enrollments and imports are temporarily restricted. Contact your platform administrator to upgrade your plan.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">

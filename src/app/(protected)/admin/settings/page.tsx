@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Settings,
@@ -20,7 +20,11 @@ import {
   Eye,
   ArrowLeft,
   Users,
+  Upload,
 } from "lucide-react";
+
+import { useSchoolBranding } from "@/context/SchoolBrandingContext";
+import { getContrastTextColor } from "@/lib/utils/color";
 
 type SettingsTab = "info" | "branding" | "grading" | "attendance" | "fees" | "roles";
 
@@ -33,6 +37,7 @@ interface GradingScaleItem {
 }
 
 export default function SchoolSettingsPage() {
+  const { updateBranding } = useSchoolBranding();
   const [activeTab, setActiveTab] = useState<SettingsTab>("info");
   const [isLoading, setIsLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -59,6 +64,86 @@ export default function SchoolSettingsPage() {
     secondaryColor: "#06b6d4",
   });
   const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
+  const [logoFileName, setLogoFileName] = useState("");
+  const [faviconFileName, setFaviconFileName] = useState("");
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+  const [faviconUploadError, setFaviconUploadError] = useState<string | null>(null);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadAsset = async (file: File, type: "logo" | "favicon") => {
+    if (!file) return;
+
+    // Frontend validation: PNG extension & MIME type
+    if (!file.name.toLowerCase().endsWith(".png") || (file.type && file.type !== "image/png")) {
+      const msg = "Invalid file type. Only PNG images (.png) are accepted.";
+      if (type === "logo") setLogoUploadError(msg);
+      else setFaviconUploadError(msg);
+      return;
+    }
+
+    const maxBytes = type === "logo" ? 2 * 1024 * 1024 : 1 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      const limit = type === "logo" ? "2MB" : "1MB";
+      const msg = `File size exceeds maximum limit of ${limit}.`;
+      if (type === "logo") setLogoUploadError(msg);
+      else setFaviconUploadError(msg);
+      return;
+    }
+
+    if (type === "logo") {
+      setIsUploadingLogo(true);
+      setLogoUploadError(null);
+    } else {
+      setIsUploadingFavicon(true);
+      setFaviconUploadError(null);
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/admin/settings/branding/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || `Failed to upload ${type}`);
+      }
+
+      if (type === "logo") {
+        setBranding((prev) => ({ ...prev, logo: json.data.url }));
+        setLogoFileName(file.name);
+      } else {
+        setBranding((prev) => ({ ...prev, favicon: json.data.url }));
+        setFaviconFileName(file.name);
+      }
+    } catch (err: any) {
+      if (type === "logo") setLogoUploadError(err.message || "Logo upload failed");
+      else setFaviconUploadError(err.message || "Favicon upload failed");
+    } finally {
+      if (type === "logo") setIsUploadingLogo(false);
+      else setIsUploadingFavicon(false);
+    }
+  };
+
+  const handleRemoveAsset = (type: "logo" | "favicon") => {
+    if (type === "logo") {
+      setBranding((prev) => ({ ...prev, logo: "" }));
+      setLogoFileName("");
+      setLogoUploadError(null);
+    } else {
+      setBranding((prev) => ({ ...prev, favicon: "" }));
+      setFaviconFileName("");
+      setFaviconUploadError(null);
+    }
+  };
 
   // Tab 3: Grading Settings Form
   const [gradingSettings, setGradingSettings] = useState<{
@@ -203,7 +288,10 @@ export default function SchoolSettingsPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error?.message || "Failed to update branding");
-      setSuccessMsg("School branding preferences saved successfully.");
+      
+      const updated = json.data?.branding || branding;
+      updateBranding(updated);
+      setSuccessMsg("School branding preferences saved successfully and applied to your workspace.");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Error saving branding");
     } finally {
@@ -526,30 +614,221 @@ export default function SchoolSettingsPage() {
                   </p>
                 </div>
 
-                <form onSubmit={handleSaveBranding} className="space-y-4 text-xs">
-                  <div className="space-y-1.5">
-                    <label className="font-medium text-foreground">School Logo URL / Emblem</label>
-                    <input
-                      type="text"
-                      placeholder="https://example.com/logo.png"
-                      value={branding.logo}
-                      onChange={(e) => setBranding({ ...branding, logo: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary font-mono"
-                    />
-                    <p className="text-[10px] text-muted-foreground">
-                      PNG or SVG image with transparent background recommended (e.g. 200x200).
-                    </p>
+                <form onSubmit={handleSaveBranding} className="space-y-5 text-xs">
+                  {/* 1. School Logo Upload */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-surface-2 border border-border space-y-4">
+                    <div>
+                      <h3 className="font-bold text-xs text-foreground">School Logo</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Upload your official school crest or emblem. PNG format with transparent background recommended.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      {/* Logo Preview Box */}
+                      <div className="w-20 h-20 rounded-2xl bg-card border border-border flex items-center justify-center p-2 shrink-0 shadow-sm relative overflow-hidden">
+                        {branding.logo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={branding.logo}
+                            alt="School Logo"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-muted-foreground/60">
+                            <Building2 className="w-8 h-8" />
+                            <span className="text-[9px] font-medium mt-1">No Logo</span>
+                          </div>
+                        )}
+                        {isUploadingLogo && (
+                          <div className="absolute inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center">
+                            <RotateCw className="w-5 h-5 text-primary animate-spin" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Controls & Status */}
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="file"
+                            ref={logoInputRef}
+                            accept=".png,image/png"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadAsset(file, "logo");
+                              if (e.target) e.target.value = "";
+                            }}
+                            className="hidden"
+                            id="school-logo-input"
+                          />
+
+                          <button
+                            type="button"
+                            disabled={isUploadingLogo}
+                            onClick={() => logoInputRef.current?.click()}
+                            className="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 transition-all"
+                          >
+                            {isUploadingLogo ? (
+                              <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5" />
+                            )}
+                            <span>{branding.logo ? "Replace PNG" : "Upload PNG"}</span>
+                          </button>
+
+                          {branding.logo && (
+                            <button
+                              type="button"
+                              disabled={isUploadingLogo}
+                              onClick={() => handleRemoveAsset("logo")}
+                              className="px-3 py-2 rounded-xl bg-surface-3 hover:bg-destructive/10 text-muted-foreground hover:text-destructive border border-border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Selected file indicator */}
+                        <div className="text-[11px] text-muted-foreground">
+                          {logoFileName ? (
+                            <span className="flex items-center gap-1.5 text-foreground font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="truncate">Selected file: {logoFileName}</span>
+                            </span>
+                          ) : branding.logo ? (
+                            <span className="truncate block font-mono text-[10px] text-muted-foreground">
+                              Current file: {branding.logo.split("/").pop()}
+                            </span>
+                          ) : (
+                            <span>No custom logo uploaded. Default ERP emblem will be used.</span>
+                          )}
+                        </div>
+
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          PNG image only. Transparent background recommended. Recommended size: 200×200 px or larger.
+                        </p>
+
+                        {logoUploadError && (
+                          <div className="p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[11px] flex items-center gap-2">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{logoUploadError}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="font-medium text-foreground">Favicon URL</label>
-                    <input
-                      type="text"
-                      placeholder="https://example.com/favicon.ico"
-                      value={branding.favicon}
-                      onChange={(e) => setBranding({ ...branding, favicon: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground focus:outline-none focus:border-primary font-mono"
-                    />
+                  {/* 2. Favicon Upload */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-surface-2 border border-border space-y-4">
+                    <div>
+                      <h3 className="font-bold text-xs text-foreground">Favicon</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Browser tab icon for your school portal workspace.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      {/* Favicon Preview Box */}
+                      <div className="w-14 h-14 rounded-xl bg-card border border-border flex items-center justify-center p-1.5 shrink-0 shadow-sm relative overflow-hidden">
+                        {branding.favicon ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={branding.favicon}
+                            alt="Favicon"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-muted-foreground/60">
+                            <ImageIcon className="w-5 h-5" />
+                            <span className="text-[8px] font-medium mt-0.5">32×32</span>
+                          </div>
+                        )}
+                        {isUploadingFavicon && (
+                          <div className="absolute inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center">
+                            <RotateCw className="w-4 h-4 text-primary animate-spin" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Controls & Status */}
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="file"
+                            ref={faviconInputRef}
+                            accept=".png,image/png"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadAsset(file, "favicon");
+                              if (e.target) e.target.value = "";
+                            }}
+                            className="hidden"
+                            id="school-favicon-input"
+                          />
+
+                          <button
+                            type="button"
+                            disabled={isUploadingFavicon}
+                            onClick={() => faviconInputRef.current?.click()}
+                            className="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 transition-all"
+                          >
+                            {isUploadingFavicon ? (
+                              <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5" />
+                            )}
+                            <span>{branding.favicon ? "Replace PNG" : "Upload PNG"}</span>
+                          </button>
+
+                          {branding.favicon && (
+                            <button
+                              type="button"
+                              disabled={isUploadingFavicon}
+                              onClick={() => handleRemoveAsset("favicon")}
+                              className="px-3 py-2 rounded-xl bg-surface-3 hover:bg-destructive/10 text-muted-foreground hover:text-destructive border border-border text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Selected file indicator */}
+                        <div className="text-[11px] text-muted-foreground">
+                          {faviconFileName ? (
+                            <span className="flex items-center gap-1.5 text-foreground font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="truncate">Selected file: {faviconFileName}</span>
+                            </span>
+                          ) : branding.favicon ? (
+                            <span className="truncate block font-mono text-[10px] text-muted-foreground">
+                              Current file: {branding.favicon.split("/").pop()}
+                            </span>
+                          ) : (
+                            <span>No custom favicon uploaded. Default ERP favicon will be used.</span>
+                          )}
+                        </div>
+
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          PNG image only. Recommended size: 32×32, 48×48 or 64×64 px.
+                        </p>
+
+                        {faviconUploadError && (
+                          <div className="p-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[11px] flex items-center gap-2">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{faviconUploadError}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -615,8 +894,11 @@ export default function SchoolSettingsPage() {
                 <div className="p-5 rounded-2xl border border-border space-y-4 bg-surface-2">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-md"
-                      style={{ backgroundColor: branding.primaryColor || "#4f46e5" }}
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold shadow-md overflow-hidden"
+                      style={{
+                        backgroundColor: branding.primaryColor || "#4f46e5",
+                        color: getContrastTextColor(branding.primaryColor || "#4f46e5"),
+                      }}
                     >
                       {branding.logo ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -629,7 +911,7 @@ export default function SchoolSettingsPage() {
                           }}
                         />
                       ) : (
-                        <Building2 className="w-6 h-6 text-white" />
+                        <Building2 className="w-6 h-6" />
                       )}
                     </div>
                     <div>
@@ -642,13 +924,16 @@ export default function SchoolSettingsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 pt-2 border-t border-border text-xs">
+                  <div className="space-y-3 pt-2 border-t border-border text-xs">
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-[11px]">Primary Button</span>
+                      <span className="text-muted-foreground text-[11px]">Primary Action</span>
                       <button
                         type="button"
-                        style={{ backgroundColor: branding.primaryColor || "#4f46e5" }}
-                        className="px-3 py-1.5 rounded-lg text-white font-bold text-[11px] shadow-xs cursor-default"
+                        style={{
+                          backgroundColor: branding.primaryColor || "#4f46e5",
+                          color: getContrastTextColor(branding.primaryColor || "#4f46e5"),
+                        }}
+                        className="px-3 py-1.5 rounded-lg font-bold text-[11px] shadow-xs cursor-default transition-all"
                       >
                         Enroll Student
                       </button>
@@ -662,16 +947,30 @@ export default function SchoolSettingsPage() {
                           color: branding.secondaryColor || "#06b6d4",
                           borderColor: `${branding.secondaryColor || "#06b6d4"}40`,
                         }}
-                        className="px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase font-mono"
+                        className="px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase font-mono"
                       >
                         Grade A+
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-[11px]">Active Navigation</span>
+                      <span
+                        style={{
+                          backgroundColor: `${branding.primaryColor || "#4f46e5"}15`,
+                          color: branding.primaryColor || "#4f46e5",
+                          borderColor: `${branding.primaryColor || "#4f46e5"}30`,
+                        }}
+                        className="px-3 py-1 rounded-lg border text-[11px] font-semibold"
+                      >
+                        Dashboard
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Note: School branding styles are applied to tenant letterheads, circular headers, and reports without altering the global application dark/light theme preference.
+                  Note: School branding styles are dynamically applied to your tenant workspace navigation, badges, and action buttons without altering the user&apos;s dark/light theme choice.
                 </p>
               </div>
             </div>
@@ -835,9 +1134,6 @@ export default function SchoolSettingsPage() {
           {activeTab === "attendance" && (
             <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-sm space-y-6">
               <div className="border-b border-border pb-4">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider mb-1">
-                  <span>Phase A4 Module Foundation</span>
-                </div>
                 <h2 className="text-lg font-bold text-foreground">Attendance & Working Schedule</h2>
                 <p className="text-xs text-muted-foreground">
                   Designate institutional working days and recognized roll-call status indicators.
@@ -925,9 +1221,6 @@ export default function SchoolSettingsPage() {
           {activeTab === "fees" && (
             <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-sm space-y-6">
               <div className="border-b border-border pb-4">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider mb-1">
-                  <span>Phase A7 Module Foundation</span>
-                </div>
                 <h2 className="text-lg font-bold text-foreground">Fee Structure & Billing Rules</h2>
                 <p className="text-xs text-muted-foreground">
                   Configure school fee categories, installment intervals, and late fee grace periods.
@@ -1061,43 +1354,43 @@ export default function SchoolSettingsPage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Full operational control within your tenant school: classes, sections, subjects, timetables, teachers, students, and institutional configuration.
+                    Full operational control within your tenant school: academic years, classes, sections, subjects, timetables, attendance, exams, fees, teachers, students, parents, notices, and institutional configuration.
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-surface-2 border border-border space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-sm">Teacher (TEACHER)</span>
-                    <span className="px-2 py-0.5 rounded bg-surface-3 text-muted-foreground font-bold uppercase font-mono text-[10px]">
-                      Upcoming Phase A3
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold uppercase font-mono text-[10px]">
+                      Teacher Portal
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Class attendance marking, assignment posting, exam marks entry, and student roll-call management for assigned sections.
+                    Class attendance marking, homework and assignment distribution, study material publishing, exam marks entry, timetable review, and leave management for assigned sections.
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-surface-2 border border-border space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-sm">Student (STUDENT)</span>
-                    <span className="px-2 py-0.5 rounded bg-surface-3 text-muted-foreground font-bold uppercase font-mono text-[10px]">
-                      Upcoming Phase A2
+                    <span className="px-2 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold uppercase font-mono text-[10px]">
+                      Student Portal
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Personal portal access for attendance percentage, timetables, assignment submissions, report cards, and circulars.
+                    Personal student portal access for viewing class timetables, daily attendance history, assignments and homework submissions, study material, exam schedules, report cards, fee receipts, and circulars.
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-surface-2 border border-border space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-sm">Parent (PARENT)</span>
-                    <span className="px-2 py-0.5 rounded bg-surface-3 text-muted-foreground font-bold uppercase font-mono text-[10px]">
-                      Upcoming Phase A2
+                    <span className="px-2 py-0.5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold uppercase font-mono text-[10px]">
+                      Parent Portal
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Parent portal for monitoring ward&apos;s daily attendance, exam scorecards, fee invoices, and notices.
+                    Parent portal access for monitoring linked children&apos;s daily attendance records, homework assignments, exam report cards, fee invoices and receipt downloads, timetable schedules, and school announcements.
                   </p>
                 </div>
               </div>

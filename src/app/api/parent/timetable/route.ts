@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireParent } from "@/lib/auth/requireParent";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import TimetableEntry from "@/models/TimetableEntry";
 import Student from "@/models/Student";
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireParent(req);
     if (!auth.success) return auth.response;
+
+    const subCheck = requireModule(auth.context.school, "TIMETABLE");
+    if (!subCheck.allowed) return subCheck.response;
 
     const { schoolId, childIds } = auth.context;
 

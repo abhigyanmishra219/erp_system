@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireTeacher } from "@/lib/auth/requireTeacher";
+import { requireModule } from "@/lib/subscription-guard";
 import connectToDatabase from "@/lib/db";
 import Assignment from "@/models/Assignment";
 import AssignmentSubmission from "@/models/AssignmentSubmission";
@@ -12,6 +13,9 @@ export async function GET(
 ) {
   const auth = await requireTeacher(req);
   if (!auth.success) return auth.response;
+
+  const subCheck = requireModule(auth.context.school, "ASSIGNMENTS");
+  if (!subCheck.allowed) return subCheck.response!;
 
   const { teacher, schoolId } = auth.context;
   const { assignmentId } = await context.params;

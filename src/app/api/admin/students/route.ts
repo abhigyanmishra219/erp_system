@@ -149,6 +149,16 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
 
+    // 0. Enforce Subscription Student Capacity Limit
+    const targetStatus = validatedData.status || "ACTIVE";
+    if (targetStatus === "ACTIVE") {
+      const { checkStudentCapacity } = await import("@/lib/subscription-guard");
+      const capacityCheck = await checkStudentCapacity(schoolId, 1);
+      if (!capacityCheck.allowed && capacityCheck.errorResponse) {
+        return capacityCheck.errorResponse;
+      }
+    }
+
     // 1. Check duplicate admission number within same school
     const existingAdmission = await Student.findOne({
       schoolId,
