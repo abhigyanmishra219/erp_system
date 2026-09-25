@@ -47,11 +47,11 @@ export default function EditPlanPage({
     name: "",
     code: "",
     description: "",
-    maxStudents: 500,
-    storageLimit: 5120,
-    maxAdmins: 2,
+    maxStudents: 500 as number | string,
+    storageLimit: 5120 as number | string,
+    maxAdmins: 2 as number | string,
     enabledModules: [] as SchoolModule[],
-    price: 0,
+    price: 0 as number | string,
     currency: "INR",
     billingPeriod: "YEARLY" as BillingPeriod,
     isActive: true,
@@ -61,6 +61,7 @@ export default function EditPlanPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const fetchPlan = useCallback(async () => {
     setIsLoading(true);
@@ -82,7 +83,7 @@ export default function EditPlanPage({
         storageLimit: p.storageLimit || 5120,
         maxAdmins: p.maxAdmins || 2,
         enabledModules: p.enabledModules || [],
-        price: p.price || 0,
+        price: p.price ?? 0,
         currency: p.currency || "INR",
         billingPeriod: p.billingPeriod || "YEARLY",
         isActive: p.isActive ?? true,
@@ -107,6 +108,13 @@ export default function EditPlanPage({
         : [...prev.enabledModules, mod];
       return { ...prev, enabledModules: updated };
     });
+    if (fieldErrors.enabledModules) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.enabledModules;
+        return copy;
+      });
+    }
   };
 
   const handleSelectAllModules = () => {
@@ -114,6 +122,13 @@ export default function EditPlanPage({
       ...prev,
       enabledModules: [...SCHOOL_MODULES],
     }));
+    if (fieldErrors.enabledModules) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.enabledModules;
+        return copy;
+      });
+    }
   };
 
   const handleDeselectAllModules = () => {
@@ -123,26 +138,100 @@ export default function EditPlanPage({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrorMessage(null);
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      errors.name = "Plan name is required.";
+    } else if (trimmedName.length > 60) {
+      errors.name = "Plan name cannot exceed 60 characters.";
+    }
+
+    if (formData.description && formData.description.length > 500) {
+      errors.description = "Description cannot exceed 500 characters.";
+    }
+
+    const maxStudentsNum = Number(formData.maxStudents);
+    if (isNaN(maxStudentsNum) || !Number.isInteger(maxStudentsNum) || maxStudentsNum < 1) {
+      errors.maxStudents = "Maximum students must be an integer greater than 0.";
+    }
+
+    const storageLimitNum = Number(formData.storageLimit);
+    if (isNaN(storageLimitNum) || !Number.isInteger(storageLimitNum) || storageLimitNum < 100) {
+      errors.storageLimit = "Storage limit must be at least 100 MB.";
+    }
+
+    const maxAdminsNum = Number(formData.maxAdmins);
+    if (isNaN(maxAdminsNum) || !Number.isInteger(maxAdminsNum) || maxAdminsNum < 1) {
+      errors.maxAdmins = "Maximum school admins must be an integer greater than 0.";
+    }
+
+    const priceNum = Number(formData.price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      errors.price = "Price cannot be negative.";
+    }
 
     if (formData.enabledModules.length === 0) {
-      setErrorMessage("Please select at least one module for this plan.");
-      setIsSubmitting(false);
+      errors.enabledModules = "Please select at least one module for this plan.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!validateForm()) {
+      setErrorMessage("Please fix the validation errors below before submitting.");
       return;
     }
+
+    setIsSubmitting(true);
+
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      maxStudents: Number(formData.maxStudents),
+      storageLimit: Number(formData.storageLimit),
+      maxAdmins: Number(formData.maxAdmins),
+      enabledModules: formData.enabledModules,
+      price: Number(formData.price),
+      currency: formData.currency.trim().toUpperCase() || "INR",
+      billingPeriod: formData.billingPeriod,
+      isActive: Boolean(formData.isActive),
+    };
 
     try {
       const res = await fetch(`/api/system-admin/plans/${planId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const json = await res.json();
       if (!res.ok || !json.success) {
+        // Map backend validation error details if available
+        if (json.error?.details && Array.isArray(json.error.details)) {
+          const apiFieldErrors: Record<string, string> = {};
+          json.error.details.forEach((item: { field: string; message: string }) => {
+            if (item.field) {
+              apiFieldErrors[item.field] = item.message;
+            }
+          });
+          setFieldErrors((prev) => ({ ...prev, ...apiFieldErrors }));
+        } else if (json.error?.validationErrors?.fieldErrors) {
+          const apiFieldErrors: Record<string, string> = {};
+          Object.entries(json.error.validationErrors.fieldErrors).forEach(([k, v]) => {
+            if (Array.isArray(v) && v.length > 0) {
+              apiFieldErrors[k] = v[0];
+            }
+          });
+          setFieldErrors((prev) => ({ ...prev, ...apiFieldErrors }));
+        }
+
         throw new Error(json.error?.message || "Failed to update plan.");
       }
 
@@ -226,10 +315,27 @@ export default function EditPlanPage({
                 id="name"
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (fieldErrors.name) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.name;
+                      return copy;
+                    });
+                  }
+                }}
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-input border ${
+                  fieldErrors.name ? "border-destructive focus:ring-destructive" : "border-input-border focus:border-primary focus:ring-primary"
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1`}
               />
+              {fieldErrors.name && (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.name}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -255,9 +361,26 @@ export default function EditPlanPage({
                 id="description"
                 rows={2}
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  if (fieldErrors.description) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.description;
+                      return copy;
+                    });
+                  }
+                }}
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-input border ${
+                  fieldErrors.description ? "border-destructive focus:ring-destructive" : "border-input-border focus:border-primary focus:ring-primary"
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1`}
               />
+              {fieldErrors.description && (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.description}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -280,12 +403,28 @@ export default function EditPlanPage({
                 type="number"
                 min={1}
                 value={formData.maxStudents}
-                onChange={(e) =>
-                  setFormData({ ...formData, maxStudents: parseInt(e.target.value) || 1 })
-                }
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : Number(e.target.value);
+                  setFormData({ ...formData, maxStudents: val });
+                  if (fieldErrors.maxStudents) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.maxStudents;
+                      return copy;
+                    });
+                  }
+                }}
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-input border ${
+                  fieldErrors.maxStudents ? "border-destructive focus:ring-destructive" : "border-input-border focus:border-primary focus:ring-primary"
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1`}
               />
+              {fieldErrors.maxStudents && (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.maxStudents}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -299,17 +438,34 @@ export default function EditPlanPage({
                 min={100}
                 step={512}
                 value={formData.storageLimit}
-                onChange={(e) =>
-                  setFormData({ ...formData, storageLimit: parseInt(e.target.value) || 100 })
-                }
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : Number(e.target.value);
+                  setFormData({ ...formData, storageLimit: val });
+                  if (fieldErrors.storageLimit) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.storageLimit;
+                      return copy;
+                    });
+                  }
+                }}
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-input border ${
+                  fieldErrors.storageLimit ? "border-destructive focus:ring-destructive" : "border-input-border focus:border-primary focus:ring-primary"
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1`}
               />
-              <p className="text-[10px] text-muted-foreground">
-                {formData.storageLimit >= 1024
-                  ? `${(formData.storageLimit / 1024).toFixed(1)} GB`
-                  : `${formData.storageLimit} MB`}
-              </p>
+              {fieldErrors.storageLimit ? (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.storageLimit}</span>
+                </p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">
+                  {typeof formData.storageLimit === "number" && formData.storageLimit >= 1024
+                    ? `${(formData.storageLimit / 1024).toFixed(1)} GB`
+                    : `${formData.storageLimit || 0} MB`}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -322,12 +478,28 @@ export default function EditPlanPage({
                 type="number"
                 min={1}
                 value={formData.maxAdmins}
-                onChange={(e) =>
-                  setFormData({ ...formData, maxAdmins: parseInt(e.target.value) || 1 })
-                }
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : Number(e.target.value);
+                  setFormData({ ...formData, maxAdmins: val });
+                  if (fieldErrors.maxAdmins) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.maxAdmins;
+                      return copy;
+                    });
+                  }
+                }}
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-input border ${
+                  fieldErrors.maxAdmins ? "border-destructive focus:ring-destructive" : "border-input-border focus:border-primary focus:ring-primary"
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1`}
               />
+              {fieldErrors.maxAdmins && (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.maxAdmins}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -349,12 +521,28 @@ export default function EditPlanPage({
                 type="number"
                 min={0}
                 value={formData.price}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
-                }
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : Number(e.target.value);
+                  setFormData({ ...formData, price: val });
+                  if (fieldErrors.price) {
+                    setFieldErrors((prev) => {
+                      const copy = { ...prev };
+                      delete copy.price;
+                      return copy;
+                    });
+                  }
+                }}
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl bg-input border border-input-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-input border ${
+                  fieldErrors.price ? "border-destructive focus:ring-destructive" : "border-input-border focus:border-primary focus:ring-primary"
+                } text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1`}
               />
+              {fieldErrors.price && (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.price}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -414,9 +602,17 @@ export default function EditPlanPage({
         {/* Section 4: Module Entitlements */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
-            <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
-              <CheckSquare className="w-4 h-4 text-primary" />
-              <span>4. Included Modules ({formData.enabledModules.length}/{SCHOOL_MODULES.length})</span>
+            <div>
+              <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+                <CheckSquare className="w-4 h-4 text-primary" />
+                <span>4. Included Modules ({formData.enabledModules.length}/{SCHOOL_MODULES.length})</span>
+              </div>
+              {fieldErrors.enabledModules && (
+                <p className="text-[11px] text-destructive font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{fieldErrors.enabledModules}</span>
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -494,3 +690,4 @@ export default function EditPlanPage({
     </div>
   );
 }
+

@@ -143,13 +143,21 @@ export async function POST(req: NextRequest) {
     const validationResult = createPlanSchema.safeParse(body);
 
     if (!validationResult.success) {
+      const firstIssue = validationResult.error.issues[0];
+      const safeMessage = firstIssue ? firstIssue.message : "Invalid plan data provided.";
+      const details = validationResult.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      }));
+
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: "Invalid plan data provided.",
-            details: validationResult.error.flatten(),
+            message: safeMessage,
+            details,
+            validationErrors: validationResult.error.flatten(),
           },
         },
         { status: 400 }
@@ -157,16 +165,17 @@ export async function POST(req: NextRequest) {
     }
 
     const validatedData = validationResult.data;
+    const normalizedCode = validatedData.code.trim().toUpperCase();
 
     // Check duplicate code
-    const existingPlan = await Plan.findOne({ code: validatedData.code });
+    const existingPlan = await Plan.findOne({ code: normalizedCode });
     if (existingPlan) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "DUPLICATE_CODE",
-            message: `A plan with code '${validatedData.code}' already exists. Please choose a unique code.`,
+            message: `A plan with code '${normalizedCode}' already exists. Please choose a unique code.`,
           },
         },
         { status: 409 }
@@ -175,6 +184,7 @@ export async function POST(req: NextRequest) {
 
     const newPlan = await Plan.create({
       ...validatedData,
+      code: normalizedCode,
       createdBy: auth.user.id,
       updatedBy: auth.user.id,
     });
@@ -218,8 +228,28 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("POST /api/system-admin/plans error:", error);
+
+    // Handle Mongo duplicate key error gracefully
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: number }).code === 11000
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "DUPLICATE_CODE",
+            message: "A plan with this code already exists. Please choose a unique code.",
+          },
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,
@@ -232,3 +262,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

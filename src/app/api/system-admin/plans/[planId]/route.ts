@@ -125,13 +125,21 @@ export async function PATCH(
     const validationResult = updatePlanSchema.safeParse(body);
 
     if (!validationResult.success) {
+      const firstIssue = validationResult.error.issues[0];
+      const safeMessage = firstIssue ? firstIssue.message : "Invalid plan update data.";
+      const details = validationResult.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      }));
+
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: "Invalid plan update data.",
-            details: validationResult.error.flatten(),
+            message: safeMessage,
+            details,
+            validationErrors: validationResult.error.flatten(),
           },
         },
         { status: 400 }
