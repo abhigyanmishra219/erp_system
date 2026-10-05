@@ -1,24 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectToDatabase from "@/lib/db";
-import User from "@/models/User";
-import { createToken } from "@/lib/jwt";
+import User, { USER_ROLES } from "@/models/User";
+import { requireSystemAdmin } from "@/lib/auth/requireSystemAdmin";
+import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 
+/**
+ * Account Registration Endpoint
+ * 
+ * SECURITY NOTICE:
+ * Public/unauthenticated registration of SYSTEM_ADMIN accounts is strictly forbidden.
+ * This endpoint requires active authentication and SYSTEM_ADMIN role privileges.
+ */
 export async function POST(req: NextRequest) {
+  // 1. Enforce Server-Side System Admin Authentication Guard
+  const auth = await requireSystemAdmin(req);
+  if (!auth.success) {
+    return auth.response;
+  }
+
+  // 2. Enforce System Admin Creation Permission
+  if (!hasPermission(auth.user, PERMISSIONS.SYSTEM_ADMIN_CREATE)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden: You lack permission to create platform administrator accounts.",
+      },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
-    const { email, password, name } = body;
+    const { email, password, name, role = "SYSTEM_ADMIN" } = body;
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { success: false, error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json(
+        { success: false, error: "Please provide a valid email address" },
         { status: 400 }
       );
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
+        { success: false, error: "Password must be at least 8 characters long" },
+        { status: 400 }
+      );
+    }
+
+    // Role validation: Only valid roles permitted
+    if (role && !USER_ROLES.includes(role)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid role specified. Permitted: ${USER_ROLES.join(", ")}` },
         { status: 400 }
       );
     }
@@ -26,67 +67,55 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
+        { success: false, error: "An account with this email already exists" },
         { status: 409 }
       );
     }
 
-    // Hash password
+    // Hash password with bcrypt
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user with default role: SYSTEM_ADMIN as requested
-    const displayName = name || email.split("@")[0];
+    // Tenant Separation: SYSTEM_ADMIN has null schoolId and null domain IDs
+    const displayName = (name && name.trim()) || normalizedEmail.split("@")[0];
     const newUser = await User.create({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       name: displayName,
       password: hashedPassword,
-      role: "SYSTEM_ADMIN",
+      role: role || "SYSTEM_ADMIN",
+      schoolId: null,
+      studentId: null,
+      parentId: null,
+      teacherId: null,
       isActive: true,
     });
 
-    // Create JWT Token
-    const userPayload = {
-      userId: newUser._id.toString(),
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-    };
-
-    const token = createToken(userPayload);
-
-    // Set HTTP-Only auth cookie
-    const response = NextResponse.json(
+    return NextResponse.json(
       {
         success: true,
-        message: "Account created successfully as System Admin",
+        message: "System Admin account created successfully",
         user: {
           id: newUser._id.toString(),
           email: newUser.email,
           name: newUser.name,
           role: newUser.role,
+          isActive: newUser.isActive,
+          createdAt: newUser.createdAt,
         },
-        token,
       },
       { status: 201 }
     );
-
-    response.cookies.set("erp_auth_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-
-    return response;
   } catch (error: unknown) {
     console.error("Register error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Failed to create account";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
   }
 }

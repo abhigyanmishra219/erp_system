@@ -125,6 +125,12 @@ export const PERMISSIONS = {
   EXPORT_RESULTS: "export.results",
   EXPORT_REPORTS: "export.reports",
 
+  // System Admin Management (Platform Level)
+  SYSTEM_ADMIN_VIEW: "system_admin.view",
+  SYSTEM_ADMIN_CREATE: "system_admin.create",
+  SYSTEM_ADMIN_EDIT: "system_admin.edit",
+  SYSTEM_ADMIN_MANAGE: "system_admin.manage",
+
   // School Settings & Administration
   SETTINGS_VIEW: "settings.view",
   SETTINGS_MANAGE: "settings.manage",

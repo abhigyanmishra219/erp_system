@@ -73,6 +73,8 @@ export default function LoginPage() {
         destination = "/admin";
       } else if (data.user?.role === "SYSTEM_ADMIN") {
         destination = "/system-admin";
+      } else if (data.user?.role === "PARENT") {
+        destination = "/parent/dashboard";
       }
 
       // Redirect after brief visual feedback
@@ -262,13 +264,7 @@ export default function LoginPage() {
 
           {/* Footer Navigation */}
           <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-            Don&apos;t have an account yet?{" "}
-            <Link
-              href="/create-account"
-              className="text-primary font-medium hover:underline inline-flex items-center gap-1"
-            >
-              Create Account
-            </Link>
+            Enterprise Portal • Need an account? Contact your institution administrator or platform support.
           </div>
         </div>
       </div>

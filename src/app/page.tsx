@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Database,
   Layers,
-  User,
+  Shield,
   LogOut,
   Sparkles,
 } from "lucide-react";
@@ -54,15 +54,9 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-all duration-150"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/create-account"
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-primary hover:bg-primary-hover text-primary-foreground transition-all duration-150 shadow-md shadow-primary/20"
               >
-                Create Account
+                Sign In
               </Link>
             </div>
           )}
@@ -131,12 +125,6 @@ export default function Home() {
               <span>Sign In</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link
-              href="/create-account"
-              className="px-6 py-3.5 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border text-foreground font-medium text-sm transition-all duration-150 flex items-center gap-2 shadow-sm"
-            >
-              <span>Create Account</span>
-            </Link>
             <a
               href="/api/health/db"
               target="_blank"
@@ -166,10 +154,10 @@ export default function Home() {
           </div>
           <div className="p-4 rounded-xl bg-card border border-border shadow-sm">
             <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center mb-3">
-              <User className="w-4 h-4" />
+              <Shield className="w-4 h-4" />
             </div>
-            <h3 className="font-semibold text-sm text-foreground">System Admin Role</h3>
-            <p className="text-xs text-muted-foreground mt-1">Complete multi-tenant control center for schools, telemetry, and platform users.</p>
+            <h3 className="font-semibold text-sm text-foreground">Role-Based Access Control</h3>
+            <p className="text-xs text-muted-foreground mt-1">Enterprise multi-tenant isolation for Administrators, Faculty, Students, and Parents.</p>
           </div>
         </div>
       </main>

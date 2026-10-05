@@ -32,6 +32,12 @@ const NAV_ITEMS = [
     activeExact: false,
   },
   {
+    label: "System Admins",
+    href: "/system-admin/system-admins",
+    icon: ShieldCheck,
+    activeExact: false,
+  },
+  {
     label: "Users",
     href: "/system-admin/users",
     icon: Users,
