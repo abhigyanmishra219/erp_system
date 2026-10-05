@@ -54,22 +54,17 @@ function makeRequest(
   body?: unknown,
   token?: string
 ): NextRequest {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const reqInit: RequestInit = {
+  return new NextRequest(new URL(url, "http://localhost:3000"), {
     method,
     headers,
-  };
-  if (body) {
-    reqInit.body = JSON.stringify(body);
-  }
-
-  return new NextRequest(new URL(url, "http://localhost:3000"), reqInit);
+    body: body ? JSON.stringify(body) : undefined,
+  });
 }
 
 async function runSystemAdminSecurityTests() {
