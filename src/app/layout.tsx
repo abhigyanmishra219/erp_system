@@ -16,8 +16,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ERP Nexus - Enterprise Management System",
-  description: "Next.js Enterprise Resource Planning Platform with MongoDB & JWT Authentication",
+  title: "Dhurava ERP | Modern School ERP Platform",
+  description:
+    "Dhurava ERP is a comprehensive school management platform for managing students, teachers, academics, attendance, examinations, fees, communication, reports, and school operations.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://erp.dhurava.com"
+  ),
+  openGraph: {
+    title: "Dhurava ERP | Modern School ERP Platform",
+    description:
+      "Dhurava ERP is a comprehensive school management platform for managing students, teachers, academics, attendance, examinations, fees, communication, reports, and school operations.",
+    url: "https://erp.dhurava.com",
+    siteName: "Dhurava ERP",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dhurava ERP | Modern School ERP Platform",
+    description:
+      "Dhurava ERP is a comprehensive school management platform for managing students, teachers, academics, attendance, examinations, fees, communication, reports, and school operations.",
+  },
 };
 
 export default function RootLayout({

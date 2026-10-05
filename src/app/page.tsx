@@ -49,16 +49,19 @@ export default function Home() {
       ======================================================== */}
       <header className="sticky top-0 z-50 w-full bg-background/85 backdrop-blur-md border-b border-border transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo & Brand */}
+          {/* Logo & Brand Hierarchy: DHURAVA / Dhurava ERP / School ERP Platform */}
           <Link href="#top" className="flex items-center gap-3 group">
             <div className="p-2.5 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform duration-200">
               <Building2 className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-lg tracking-tight text-foreground leading-tight">
-                ERP Nexus
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary leading-none mb-0.5">
+                DHURAVA
               </span>
-              <span className="text-[11px] font-medium text-muted-foreground tracking-wide">
+              <span className="font-extrabold text-lg tracking-tight text-foreground leading-tight">
+                Dhurava ERP
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground tracking-wide">
                 School ERP Platform
               </span>
             </div>
@@ -271,9 +274,8 @@ export default function Home() {
 
               {/* Subheading */}
               <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Manage students, teachers, academics, attendance, examinations,
-                fees, communication, reports, and daily school operations from
-                one secure platform.
+                Manage your school&apos;s academic, administrative, financial, and
+                operational activities from one powerful platform.
               </p>
 
               {/* CTAs */}
@@ -326,7 +328,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Product Preview Mockup */}
+            {/* Right Product Preview Mockup: Dhurava ERP */}
             <div className="lg:col-span-6 relative">
               {/* Decorative Frame Glow */}
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-purple-500/20 to-blue-500/20 rounded-3xl blur-2xl -z-10" />
@@ -340,12 +342,12 @@ export default function Home() {
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                     <span className="ml-2 text-[11px] font-mono text-muted-foreground">
-                      portal.erpnexus.com
+                      erp.dhurava.com
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Campus Online</span>
+                    <span>Dhurava Cloud Active</span>
                   </div>
                 </div>
 
@@ -359,10 +361,10 @@ export default function Home() {
                       </div>
                       <div>
                         <h4 className="text-xs font-bold text-foreground">
-                          St. Xavier&apos;s International School
+                          Dhurava ERP — Campus Dashboard
                         </h4>
                         <p className="text-[10px] text-muted-foreground">
-                          Academic Session 2026-27 • CBSE Affiliated
+                          Academic Session 2026-27 • Live Portal
                         </p>
                       </div>
                     </div>
@@ -552,7 +554,7 @@ export default function Home() {
               Everything You Need to Run Your School
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              ERP Nexus brings your school&apos;s academic, administrative,
+              Dhurava ERP brings your school&apos;s academic, administrative,
               financial, and communication workflows together in one platform.
             </p>
           </div>
@@ -747,7 +749,7 @@ export default function Home() {
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground">
               Explore the full suite of specialized modules engineered for modern
-              educational institutions.
+              educational institutions in Dhurava ERP.
             </p>
           </div>
 
@@ -917,7 +919,7 @@ export default function Home() {
               <span>Seamless Onboarding</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-              How ERP Nexus Works
+              How Dhurava ERP Works
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground">
               Get your institution operational in hours with guided deployment
@@ -1178,7 +1180,7 @@ export default function Home() {
               <span>Enterprise Isolation</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-              Built for Multiple Schools
+              Dhurava ERP is built for multiple schools
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
               Manage multiple schools from a single secure platform while keeping
@@ -1192,7 +1194,7 @@ export default function Home() {
             <div className="text-center space-y-2">
               <div className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-xl shadow-primary/25">
                 <Globe className="w-5 h-5" />
-                <span>ERP Nexus Multi-Tenant Engine</span>
+                <span>Dhurava ERP Multi-Tenant Engine</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Unified security, subscription management, and platform governance
@@ -1283,11 +1285,11 @@ export default function Home() {
               <span>Enterprise Confidence</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-              Built With Security in Mind
+              Built for Secure School Management
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground">
               Protecting school records, student privacy, and financial
-              transactions with industrial-grade data safeguards.
+              transactions with industrial-grade data safeguards in Dhurava ERP.
             </p>
           </div>
 
@@ -1374,16 +1376,16 @@ export default function Home() {
       </section>
 
       {/* ========================================================
-          10. PRICING SECTION (MATCHING SYSTEM PLANS)
+          10. PRICING SECTION (DHURAVA ERP PLANS)
       ======================================================== */}
       <section id="pricing" className="py-20 sm:py-28 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
-              <span>Subscription Plans</span>
+              <span>Choose the Right Dhurava ERP Plan</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-              Transparent Plans for Every Institution
+              Dhurava ERP Plans
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground">
               Choose the ideal tier for your school or educational group.
@@ -1660,8 +1662,8 @@ export default function Home() {
           </h2>
 
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Bring your school&apos;s academic, administrative, and operational
-            workflows together with ERP Nexus.
+            Dhurava ERP brings your school&apos;s academic, administrative, and
+            operational workflows together in one powerful platform.
           </p>
 
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -1669,8 +1671,7 @@ export default function Home() {
               href="/login"
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground font-bold text-sm shadow-xl shadow-primary/25 hover:shadow-primary/35 transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
-              <span>Sign In to Your Portal</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span>Sign In →</span>
             </Link>
           </div>
         </div>
@@ -1688,15 +1689,31 @@ export default function Home() {
                 <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
                   <Building2 className="w-5 h-5" />
                 </div>
-                <span className="font-extrabold text-lg tracking-tight text-foreground">
-                  ERP Nexus
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary leading-none mb-0.5">
+                    DHURAVA
+                  </span>
+                  <span className="font-extrabold text-lg tracking-tight text-foreground leading-tight">
+                    Dhurava ERP
+                  </span>
+                </div>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground max-w-sm leading-relaxed">
                 Modern School ERP Platform unifying academic operations,
                 attendance, examinations, fees, and multi-tenant management for
                 institutions worldwide.
               </p>
+              <div className="pt-1">
+                <a
+                  href="https://erp.dhurava.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <span>erp.dhurava.com</span>
+                  <ArrowRight className="w-3 h-3" />
+                </a>
+              </div>
             </div>
 
             {/* Product Column */}
@@ -1760,17 +1777,17 @@ export default function Home() {
             {/* Legal & Company Column */}
             <div className="space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Governance
+                Company
               </p>
               <ul className="space-y-2 text-xs text-muted-foreground">
                 <li>
                   <Link href="#security" className="hover:text-foreground">
-                    Data Security
+                    About Dhurava
                   </Link>
                 </li>
                 <li>
-                  <Link href="#multi-tenant" className="hover:text-foreground">
-                    Multi-Tenant Cloud
+                  <Link href="#contact" className="hover:text-foreground">
+                    Contact Us
                   </Link>
                 </li>
                 <li>
@@ -1788,8 +1805,8 @@ export default function Home() {
           </div>
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <p>© 2026 ERP Nexus. All rights reserved.</p>
-            <p>Enterprise Resource Planning Platform for Education</p>
+            <p>© 2026 Dhurava. All rights reserved.</p>
+            <p className="font-mono text-[11px]">https://erp.dhurava.com</p>
           </div>
         </div>
       </footer>

@@ -123,7 +123,7 @@ export default function SystemAdminSidebar() {
             </div>
             <div>
               <h2 className="font-bold text-sm text-sidebar-foreground leading-tight">
-                ERP Nexus
+                Dhurava ERP
               </h2>
               <div className="inline-flex items-center gap-1 text-[10px] text-primary font-semibold tracking-wide uppercase">
                 <Sparkles className="w-2.5 h-2.5" />

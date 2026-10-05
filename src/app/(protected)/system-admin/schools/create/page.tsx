@@ -171,7 +171,7 @@ export default function CreateSchoolPage() {
 
   const handleCopyAll = () => {
     if (!createdData) return;
-    const text = `ERP Nexus — School Onboarding Credentials\n==========================================\nSchool Name: ${createdData.school.name}\nSchool ID / Code: ${createdData.school.code}\nSchool Admin Email: ${createdData.schoolAdmin.email}\nRole: School Administrator (ADMIN)\nTemporary Password: ${createdData.temporaryPassword}\n\nNote: The administrator is required to change this password upon first login.`;
+    const text = `Dhurava ERP — School Onboarding Credentials\n==========================================\nSchool Name: ${createdData.school.name}\nSchool ID / Code: ${createdData.school.code}\nSchool Admin Email: ${createdData.schoolAdmin.email}\nRole: School Administrator (ADMIN)\nTemporary Password: ${createdData.temporaryPassword}\n\nNote: The administrator is required to change this password upon first login.`;
     navigator.clipboard.writeText(text);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);

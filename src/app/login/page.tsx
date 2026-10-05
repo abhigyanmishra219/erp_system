@@ -113,7 +113,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium tracking-wide uppercase mb-4 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Enterprise Resource Planning</span>
+            <span>Dhurava ERP Platform</span>
           </div>
 
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -125,7 +125,7 @@ export default function LoginPage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Sign in to access your ERP portal and workspace
+            Sign in to access your Dhurava ERP portal and workspace
           </p>
         </div>
 

@@ -33,7 +33,7 @@ export async function ensureInitialSystemAdmin(options?: {
     options?.email ||
     process.env.INITIAL_ADMIN_EMAIL ||
     process.env.ADMIN_EMAIL ||
-    "sysadmin@erpnexus.com"
+    "sysadmin@dhurava.com"
   ).toLowerCase().trim();
 
   const adminPassword =

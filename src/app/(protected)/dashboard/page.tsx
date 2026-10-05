@@ -82,7 +82,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <h1 className="font-bold text-base leading-none text-foreground">
-              ERP Nexus
+              Dhurava ERP
             </h1>
             <span className="text-[11px] text-muted-foreground">
               Protected Workspace
