@@ -92,3 +92,5 @@ Thumbs.db
 *.tmp
 *.temp
 *.log
+# Temporary test scripts
+test_*.ts
