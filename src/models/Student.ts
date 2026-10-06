@@ -25,7 +25,7 @@ export interface ITransferDetails {
 }
 
 export interface IStudent extends Document {
-  schoolId: mongoose.Types.ObjectId | string;
+  schoolId?: mongoose.Types.ObjectId | string;
   admissionNumber: string;
   studentId?: string;
   rollNumber?: string;
@@ -38,12 +38,14 @@ export interface IStudent extends Document {
   bloodGroup?: string;
   avatarUrl?: string;
 
-  // Current Academic Placement
+  // School Placement
   academicYearId: mongoose.Types.ObjectId | string;
   classId: mongoose.Types.ObjectId | string;
   sectionId: mongoose.Types.ObjectId | string;
-  admissionDate: Date;
+  admissionDate?: Date;
   status: StudentStatus;
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
 
   // Address & Contacts
   address?: {
@@ -99,14 +101,14 @@ const StudentSchema = new Schema<IStudent>(
     schoolId: {
       type: Schema.Types.ObjectId,
       ref: "School",
-      required: [true, "School ID is required"],
+      default: null,
       index: true,
     },
     admissionNumber: {
       type: String,
-      required: [true, "Admission Number is required"],
       trim: true,
       uppercase: true,
+      default: "",
     },
     studentId: {
       type: String,
@@ -162,24 +164,23 @@ const StudentSchema = new Schema<IStudent>(
     academicYearId: {
       type: Schema.Types.ObjectId,
       ref: "AcademicYear",
-      required: [true, "Academic Year is required"],
+      default: null,
       index: true,
     },
     classId: {
       type: Schema.Types.ObjectId,
       ref: "Class",
-      required: [true, "Class is required"],
+      default: null,
       index: true,
     },
     sectionId: {
       type: Schema.Types.ObjectId,
       ref: "Section",
-      required: [true, "Section is required"],
+      default: null,
       index: true,
     },
     admissionDate: {
       type: Date,
-      required: [true, "Admission date is required"],
       default: Date.now,
     },
     status: {
@@ -187,6 +188,15 @@ const StudentSchema = new Schema<IStudent>(
       enum: ["ACTIVE", "INACTIVE", "TRANSFERRED", "GRADUATED"],
       default: "ACTIVE",
       index: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
     address: {
       street: { type: String, trim: true, default: "" },
@@ -239,20 +249,24 @@ const StudentSchema = new Schema<IStudent>(
   }
 );
 
-// Compound indexes for multi-tenant isolation and fast lookups
-StudentSchema.index({ schoolId: 1, admissionNumber: 1 }, { unique: true });
+// Indexes for global student identity lookup
 StudentSchema.index(
-  { schoolId: 1, email: 1 },
+  { email: 1 },
   {
     unique: true,
     partialFilterExpression: {
       email: { $type: "string", $gt: "" },
+      isDeleted: false,
     },
   }
 );
-StudentSchema.index({ schoolId: 1, status: 1 });
-StudentSchema.index({ schoolId: 1, academicYearId: 1, classId: 1, sectionId: 1 });
-StudentSchema.index({ schoolId: 1, firstName: 1, lastName: 1 });
+StudentSchema.index({ firstName: 1, lastName: 1 });
+StudentSchema.index({ isDeleted: 1, status: 1 });
+StudentSchema.index({ schoolId: 1, isDeleted: 1 });
+
+if (mongoose.models && mongoose.models.Student) {
+  delete (mongoose.models as Record<string, unknown>).Student;
+}
 
 const Student: Model<IStudent> =
   mongoose.models.Student || mongoose.model<IStudent>("Student", StudentSchema);

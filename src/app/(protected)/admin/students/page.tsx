@@ -23,6 +23,9 @@ import {
   Key,
   AlertCircle,
   AlertTriangle,
+  Trash2,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import { useSubscription } from "@/context/SubscriptionContext";
 
@@ -63,10 +66,16 @@ interface ClassOpt {
 }
 
 export default function StudentsDirectoryPage() {
-  const { studentUsage, subscription } = useSubscription();
+  const { studentUsage, subscription, refetchSubscription } = useSubscription();
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Deletion modal state
+  const [studentToDelete, setStudentToDelete] = useState<StudentItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string | null>(null);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string | null>(null);
 
   // Pagination & Filters
   const [page, setPage] = useState(1);
@@ -175,6 +184,40 @@ export default function StudentsDirectoryPage() {
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  const handleConfirmDelete = async () => {
+    if (!studentToDelete) return;
+    setIsDeleting(true);
+    setDeleteErrorMsg(null);
+
+    try {
+      const res = await fetch(`/api/admin/students/${studentToDelete.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || data.message || "Failed to remove student from school.");
+      }
+
+      setStudentToDelete(null);
+      setDeleteSuccessMsg("Student removed successfully.");
+      setTimeout(() => setDeleteSuccessMsg(null), 5000);
+
+      // Refresh students directory
+      fetchStudents();
+
+      // Refresh student subscription capacity
+      if (refetchSubscription) {
+        refetchSubscription();
+      }
+    } catch (err: unknown) {
+      console.error("Delete student error:", err);
+      setDeleteErrorMsg(err instanceof Error ? err.message : "Failed to remove student from school.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -392,6 +435,22 @@ export default function StudentsDirectoryPage() {
         </div>
       </div>
 
+      {/* Success Notification Banner */}
+      {deleteSuccessMsg && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span>{deleteSuccessMsg}</span>
+          </div>
+          <button
+            onClick={() => setDeleteSuccessMsg(null)}
+            className="text-emerald-600/70 hover:text-emerald-600"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-sm">
@@ -524,14 +583,29 @@ export default function StudentsDirectoryPage() {
                       )}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right">
-                      <Link
-                        href={`/admin/students/${st.id}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-muted transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-indigo-500" />
-                        View Profile
-                      </Link>
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          href={`/admin/students/${st.id}`}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                          title="View Profile"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>View Profile</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStudentToDelete(st);
+                            setDeleteErrorMsg(null);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-500/20 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors"
+                          title="Delete Student"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -567,6 +641,94 @@ export default function StudentsDirectoryPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {studentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200"
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* Modal Header */}
+            <div className="p-6 pb-4 flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-foreground">Delete Student?</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Are you sure you want to remove{" "}
+                  <span className="font-semibold text-foreground">
+                    {studentToDelete.fullName}
+                  </span>{" "}
+                  from{" "}
+                  <span className="font-semibold text-foreground">
+                    {subscription?.schoolName || "this school"}
+                  </span>
+                  ?
+                </p>
+              </div>
+              <button
+                disabled={isDeleting}
+                onClick={() => {
+                  setStudentToDelete(null);
+                  setDeleteErrorMsg(null);
+                }}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body / Information Note */}
+            <div className="px-6 py-2">
+              <div className="p-3.5 bg-muted/60 border border-border/80 rounded-xl text-xs text-muted-foreground leading-relaxed">
+                This will remove the student&apos;s enrollment, academic placement, and school-specific access from this school. The student&apos;s global account will not be deleted if they are enrolled in another school.
+              </div>
+
+              {deleteErrorMsg && (
+                <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-medium">
+                  {deleteErrorMsg}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-6 pt-4 flex items-center justify-end gap-3 bg-muted/20 border-t border-border mt-3">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setStudentToDelete(null);
+                  setDeleteErrorMsg(null);
+                }}
+                className="px-4 py-2 rounded-xl border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-60"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete Student
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

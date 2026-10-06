@@ -106,28 +106,48 @@ export default function CreateStudentPage() {
   const [emailValidation, setEmailValidation] = useState<{
     checking: boolean;
     error: string | null;
-  }>({ checking: false, error: null });
+    existingStudentNotice: string | null;
+  }>({ checking: false, error: null, existingStudentNotice: null });
 
   const checkStudentEmail = async (email: string) => {
     const trimmed = email.trim();
     if (!trimmed) {
-      setEmailValidation({ checking: false, error: null });
+      setEmailValidation({ checking: false, error: null, existingStudentNotice: null });
       return;
     }
-    setEmailValidation((prev) => ({ ...prev, checking: true }));
+    setEmailValidation((prev) => ({ ...prev, checking: true, error: null, existingStudentNotice: null }));
     try {
       const res = await fetch(`/api/admin/students/check-email?email=${encodeURIComponent(trimmed)}`);
       const json = await res.json();
       if (json.success && !json.available) {
         setEmailValidation({
           checking: false,
-          error: json.reason || "Email address is already used by another student in this school.",
+          error: json.reason || "Student is already enrolled in this school.",
+          existingStudentNotice: null,
         });
+      } else if (json.success && json.existingStudent && json.student) {
+        setEmailValidation({
+          checking: false,
+          error: null,
+          existingStudentNotice:
+            json.message ||
+            "Existing student account found! Personal details have been pre-filled. Enrolling will link this student to your school.",
+        });
+        // Pre-fill existing student profile details
+        setFormData((prev) => ({
+          ...prev,
+          firstName: prev.firstName || json.student.firstName || "",
+          lastName: prev.lastName || json.student.lastName || "",
+          phone: prev.phone || json.student.phone || "",
+          dateOfBirth: prev.dateOfBirth || (json.student.dateOfBirth ? json.student.dateOfBirth.split("T")[0] : ""),
+          gender: json.student.gender || prev.gender,
+          bloodGroup: json.student.bloodGroup || prev.bloodGroup,
+        }));
       } else {
-        setEmailValidation({ checking: false, error: null });
+        setEmailValidation({ checking: false, error: null, existingStudentNotice: null });
       }
     } catch {
-      setEmailValidation({ checking: false, error: null });
+      setEmailValidation({ checking: false, error: null, existingStudentNotice: null });
     }
   };
 
@@ -483,7 +503,9 @@ export default function CreateStudentPage() {
                 value={formData.email}
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
-                  if (emailValidation.error) setEmailValidation({ checking: false, error: null });
+                  if (emailValidation.error) {
+                    setEmailValidation({ checking: false, error: null, existingStudentNotice: null });
+                  }
                 }}
                 onBlur={(e) => checkStudentEmail(e.target.value)}
                 className={`w-full px-3 py-2 bg-background border ${
@@ -497,6 +519,12 @@ export default function CreateStudentPage() {
                 <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 flex-shrink-0" />
                   {emailValidation.error}
+                </p>
+              )}
+              {emailValidation.existingStudentNotice && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+                  {emailValidation.existingStudentNotice}
                 </p>
               )}
             </div>

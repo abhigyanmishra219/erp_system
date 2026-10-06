@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
 import connectToDatabase from "@/lib/db";
 import Student from "@/models/Student";
+import StudentEnrollment from "@/models/StudentEnrollment";
 import Parent from "@/models/Parent";
 import StudentParent from "@/models/StudentParent";
 import User from "@/models/User";
@@ -13,6 +14,7 @@ import AuditLog from "@/models/AuditLog";
 import { createStudentSchema } from "@/lib/validation/studentParent";
 import { generateTemporaryPassword } from "@/lib/tempPassword";
 import { normalizeEmail } from "@/lib/utils/email";
+import { getSchoolStudentEnrollments } from "@/lib/services/studentEnrollmentService";
 
 export async function GET(req: NextRequest) {
   const auth = await requireSchoolAdmin(req);
@@ -31,99 +33,26 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get("status") || "ALL";
     const gender = url.searchParams.get("gender") || "ALL";
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
-    const sortOrder = url.searchParams.get("sortOrder") === "asc" ? 1 : -1;
+    const sortOrder = url.searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
     await connectToDatabase();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filter: Record<string, any> = { schoolId };
-
-    if (status !== "ALL") {
-      filter.status = status;
-    }
-
-    if (gender !== "ALL") {
-      filter.gender = gender;
-    }
-
-    if (academicYearId) {
-      filter.academicYearId = academicYearId;
-    }
-
-    if (classId) {
-      filter.classId = classId;
-    }
-
-    if (sectionId) {
-      filter.sectionId = sectionId;
-    }
-
-    if (search) {
-      const searchRegex = new RegExp(
-        search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-        "i"
-      );
-      filter.$or = [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { admissionNumber: searchRegex },
-        { rollNumber: searchRegex },
-        { email: searchRegex },
-        { phone: searchRegex },
-        { studentId: searchRegex },
-      ];
-    }
-
-    const skip = (page - 1) * limit;
-
-    const [total, students] = await Promise.all([
-      Student.countDocuments(filter),
-      Student.find(filter)
-        .populate("academicYearId", "name status")
-        .populate("classId", "name code")
-        .populate("sectionId", "name")
-        .populate("userId", "email isActive")
-        .sort({ [sortBy]: sortOrder })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-    ]);
-
-    const totalPages = Math.ceil(total / limit) || 1;
+    const result = await getSchoolStudentEnrollments(schoolId, {
+      page,
+      limit,
+      search,
+      academicYearId,
+      classId,
+      sectionId,
+      status,
+      gender,
+      sortBy,
+      sortOrder,
+    });
 
     return NextResponse.json({
       success: true,
-      data: {
-        students: students.map((s) => ({
-          id: s._id.toString(),
-          admissionNumber: s.admissionNumber,
-          studentId: s.studentId,
-          rollNumber: s.rollNumber,
-          firstName: s.firstName,
-          lastName: s.lastName,
-          fullName: `${s.firstName} ${s.lastName}`.trim(),
-          email: s.email,
-          phone: s.phone,
-          dateOfBirth: s.dateOfBirth,
-          gender: s.gender,
-          bloodGroup: s.bloodGroup,
-          avatarUrl: s.avatarUrl,
-          academicYear: s.academicYearId,
-          class: s.classId,
-          section: s.sectionId,
-          status: s.status,
-          hasLoginAccount: !!s.userId,
-          user: s.userId,
-          admissionDate: s.admissionDate,
-          createdAt: s.createdAt,
-        })),
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
-        },
-      },
+      data: result,
     });
   } catch (err: unknown) {
     console.error("GET /api/admin/students error:", err);
@@ -160,11 +89,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Check duplicate admission number within same school
-    const existingAdmission = await Student.findOne({
+    const existingAdmission = await StudentEnrollment.findOne({
       schoolId,
       admissionNumber: {
         $regex: new RegExp(`^${validatedData.admissionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
       },
+      isDeleted: false,
     });
 
     if (existingAdmission) {
@@ -180,25 +110,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Check duplicate email within same school if provided
+    // 2. Multi-school student check by email
     const normalizedStudentEmail = normalizeEmail(validatedData.email);
+    let existingGlobalStudent: (typeof Student.prototype) | null = null;
+
     if (normalizedStudentEmail) {
-      const existingEmail = await Student.findOne({
-        schoolId,
+      // Find existing global student identity
+      existingGlobalStudent = await Student.findOne({
         email: normalizedStudentEmail,
+        isDeleted: false,
       });
 
-      if (existingEmail) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: "DUPLICATE_EMAIL",
-              message: "A student with this email address already exists in your school.",
+      if (!existingGlobalStudent) {
+        // Also check if a user account exists with this email
+        const existingUser = await User.findOne({ email: normalizedStudentEmail });
+        if (existingUser) {
+          if (existingUser.role !== "STUDENT") {
+            return NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: "USER_EMAIL_EXISTS",
+                  message: `The email '${normalizedStudentEmail}' is already associated with a non-student account (${existingUser.role}).`,
+                },
+              },
+              { status: 409 }
+            );
+          }
+          if (existingUser.studentId) {
+            existingGlobalStudent = await Student.findById(existingUser.studentId);
+          }
+        }
+      }
+
+      // If student already exists globally, check if already enrolled in THIS school
+      if (existingGlobalStudent) {
+        const alreadyEnrolledInThisSchool = await StudentEnrollment.findOne({
+          schoolId,
+          studentId: existingGlobalStudent._id,
+          isDeleted: false,
+        });
+
+        if (alreadyEnrolledInThisSchool) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "ALREADY_ENROLLED",
+                message: "Student is already enrolled in this school.",
+              },
             },
-          },
-          { status: 409 }
-        );
+            { status: 409 }
+          );
+        }
       }
     }
 
@@ -239,7 +203,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Create Student record
+    // 4. Resolve or create Global Student Identity
+    let studentDoc: typeof Student.prototype;
+
+    if (existingGlobalStudent) {
+      // REUSE existing student global identity without creating duplicate
+      studentDoc = existingGlobalStudent;
+      if (validatedData.phone && !studentDoc.phone) {
+        studentDoc.phone = validatedData.phone;
+      }
+      studentDoc.updatedBy = user.id;
+      await studentDoc.save();
+    } else {
+      // Create new global student record
+      studentDoc = new Student({
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: normalizedStudentEmail,
+        phone: validatedData.phone || "",
+        dateOfBirth: new Date(validatedData.dateOfBirth),
+        gender: validatedData.gender,
+        bloodGroup: validatedData.bloodGroup || "",
+        avatarUrl: validatedData.avatarUrl || "",
+        address: validatedData.address,
+        emergencyContact: validatedData.emergencyContact,
+        medicalInfo: validatedData.medicalInfo,
+        status: validatedData.status || "ACTIVE",
+        isDeleted: false,
+        // Optional backward compatibility fields
+        schoolId,
+        admissionNumber: validatedData.admissionNumber,
+        academicYearId: academicYear._id,
+        classId: classDoc._id,
+        sectionId: sectionDoc._id,
+        admissionDate: validatedData.admissionDate ? new Date(validatedData.admissionDate) : new Date(),
+        createdBy: user.id,
+        updatedBy: user.id,
+      });
+
+      await studentDoc.save();
+    }
+
+    // 5. Create School-Scoped StudentEnrollment
     const initialHistory = [
       {
         academicYearId: academicYear._id,
@@ -254,59 +259,54 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    const newStudent = new Student({
+    const newEnrollment = new StudentEnrollment({
+      studentId: studentDoc._id,
       schoolId,
-      admissionNumber: validatedData.admissionNumber,
-      studentId: validatedData.studentId || validatedData.admissionNumber,
-      rollNumber: validatedData.rollNumber || "",
-      firstName: validatedData.firstName,
-      lastName: validatedData.lastName,
-      email: normalizedStudentEmail,
-      phone: validatedData.phone || "",
-      dateOfBirth: new Date(validatedData.dateOfBirth),
-      gender: validatedData.gender,
-      bloodGroup: validatedData.bloodGroup || "",
-      avatarUrl: validatedData.avatarUrl || "",
       academicYearId: academicYear._id,
       classId: classDoc._id,
       sectionId: sectionDoc._id,
+      admissionNumber: validatedData.admissionNumber,
+      studentIdCode: validatedData.studentId || validatedData.admissionNumber,
+      rollNumber: validatedData.rollNumber || "",
       admissionDate: validatedData.admissionDate ? new Date(validatedData.admissionDate) : new Date(),
       status: validatedData.status || "ACTIVE",
-      address: validatedData.address,
-      emergencyContact: validatedData.emergencyContact,
-      medicalInfo: validatedData.medicalInfo,
       academicHistory: initialHistory,
+      isDeleted: false,
+      deletedAt: null,
       createdBy: user.id,
       updatedBy: user.id,
     });
 
-    await newStudent.save();
+    await newEnrollment.save();
 
     let studentCredentials = null;
     let parentCredentials = null;
 
-    // 5. Optional: Create Student Login Account
+    // 6. Optional: Create or Link Student Login Account
     const studentLoginEmail = normalizeEmail(validatedData.loginEmail || validatedData.email);
     if (validatedData.createLoginAccount && studentLoginEmail) {
       const existingUser = await User.findOne({ email: studentLoginEmail });
       if (existingUser) {
-        if (existingUser.role !== "STUDENT" || (existingUser.studentId && existingUser.studentId.toString() !== newStudent._id.toString())) {
+        if (existingUser.role !== "STUDENT") {
           return NextResponse.json(
             {
               success: false,
               error: {
                 code: "USER_EMAIL_EXISTS",
-                message: `The login email '${studentLoginEmail}' is already associated with another user account.`,
+                message: `The login email '${studentLoginEmail}' is already associated with another non-student account.`,
               },
             },
             { status: 409 }
           );
         }
+        // Link user to student if not yet linked
         if (!existingUser.studentId) {
-          existingUser.studentId = newStudent._id;
+          existingUser.studentId = studentDoc._id;
           await existingUser.save();
-          newStudent.userId = existingUser._id;
-          await newStudent.save();
+        }
+        if (!studentDoc.userId) {
+          studentDoc.userId = existingUser._id;
+          await studentDoc.save();
         }
       } else {
         const rawPassword = generateTemporaryPassword();
@@ -318,14 +318,14 @@ export async function POST(req: NextRequest) {
           password: hashedPassword,
           role: "STUDENT",
           schoolId,
-          studentId: newStudent._id,
+          studentId: studentDoc._id,
           mustChangePassword: true,
           isActive: true,
         });
 
         await studentUser.save();
-        newStudent.userId = studentUser._id;
-        await newStudent.save();
+        studentDoc.userId = studentUser._id;
+        await studentDoc.save();
 
         studentCredentials = {
           email: studentUser.email,
@@ -342,7 +342,8 @@ export async function POST(req: NextRequest) {
           entityId: studentUser._id.toString(),
           schoolId,
           metadata: {
-            studentId: newStudent._id.toString(),
+            studentId: studentDoc._id.toString(),
+            enrollmentId: newEnrollment._id.toString(),
             userId: studentUser._id.toString(),
             email: studentUser.email,
           },
@@ -394,7 +395,7 @@ export async function POST(req: NextRequest) {
       // Link Student to Parent
       const studentParentLink = new StudentParent({
         schoolId,
-        studentId: newStudent._id,
+        studentId: studentDoc._id,
         parentId: parentDoc._id,
         relationship: parentData.relationship || "GUARDIAN",
         isPrimaryGuardian: parentData.isPrimaryGuardian ?? true,
@@ -410,10 +411,10 @@ export async function POST(req: NextRequest) {
         userRole: user.role,
         action: "STUDENT_PARENT_LINKED",
         entityType: "STUDENT",
-        entityId: newStudent._id.toString(),
+        entityId: studentDoc._id.toString(),
         schoolId,
         metadata: {
-          studentId: newStudent._id.toString(),
+          studentId: studentDoc._id.toString(),
           parentId: parentDoc._id.toString(),
           relationship: parentData.relationship,
           isPrimaryGuardian: parentData.isPrimaryGuardian,
@@ -466,18 +467,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Audit Log for Student Creation
+    // Audit Log for Student Enrollment
     await AuditLog.create({
       userId: user.id,
       userRole: user.role,
       action: "STUDENT_CREATED",
       entityType: "STUDENT",
-      entityId: newStudent._id.toString(),
+      entityId: studentDoc._id.toString(),
       schoolId,
       metadata: {
-        studentId: newStudent._id.toString(),
-        admissionNumber: newStudent.admissionNumber,
-        name: `${newStudent.firstName} ${newStudent.lastName}`,
+        studentId: studentDoc._id.toString(),
+        enrollmentId: newEnrollment._id.toString(),
+        admissionNumber: newEnrollment.admissionNumber,
+        name: `${studentDoc.firstName} ${studentDoc.lastName}`,
         classId: classDoc._id.toString(),
         className: classDoc.name,
         sectionId: sectionDoc._id.toString(),
@@ -491,12 +493,13 @@ export async function POST(req: NextRequest) {
         success: true,
         data: {
           student: {
-            id: newStudent._id.toString(),
-            admissionNumber: newStudent.admissionNumber,
-            studentId: newStudent.studentId,
-            firstName: newStudent.firstName,
-            lastName: newStudent.lastName,
-            status: newStudent.status,
+            id: studentDoc._id.toString(),
+            enrollmentId: newEnrollment._id.toString(),
+            admissionNumber: newEnrollment.admissionNumber,
+            studentId: newEnrollment.studentIdCode,
+            firstName: studentDoc.firstName,
+            lastName: studentDoc.lastName,
+            status: newEnrollment.status,
           },
           credentials: {
             student: studentCredentials,

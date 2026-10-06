@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import School, { ISchool } from "@/models/School";
 import Student from "@/models/Student";
+import StudentEnrollment from "@/models/StudentEnrollment";
 import {
   ERP_MODULES,
   SchoolModule,
@@ -167,11 +168,20 @@ export async function checkStudentCapacity(
     };
   }
 
-  // Count active students only
-  const currentCount = await Student.countDocuments({
+  // Count active enrollments for current school only (multi-school tenant isolation)
+  const enrollmentCount = await StudentEnrollment.countDocuments({
     schoolId: new mongoose.Types.ObjectId(schoolId),
     status: "ACTIVE",
+    isDeleted: false,
   });
+
+  const legacyCount = await Student.countDocuments({
+    schoolId: new mongoose.Types.ObjectId(schoolId),
+    status: "ACTIVE",
+    isDeleted: false,
+  });
+
+  const currentCount = Math.max(enrollmentCount, legacyCount);
 
   const limit = school.studentLimit || 200;
   const remaining = Math.max(0, limit - currentCount);
@@ -216,10 +226,20 @@ export async function getSubscriptionDetails(
   const school = await School.findById(schoolId).lean();
   if (!school || school.isDeleted) return null;
 
-  const currentStudents = await Student.countDocuments({
+  // Multi-school scoped count for this school
+  const enrollmentCount = await StudentEnrollment.countDocuments({
     schoolId: new mongoose.Types.ObjectId(schoolId),
     status: "ACTIVE",
+    isDeleted: false,
   });
+
+  const legacyCount = await Student.countDocuments({
+    schoolId: new mongoose.Types.ObjectId(schoolId),
+    status: "ACTIVE",
+    isDeleted: false,
+  });
+
+  const currentStudents = Math.max(enrollmentCount, legacyCount);
 
   const effectiveStatus = getEffectiveSubscriptionStatus(school);
   const isActive = effectiveStatus === "ACTIVE" || effectiveStatus === "TRIAL";
@@ -239,6 +259,7 @@ export async function getSubscriptionDetails(
     planName: school.plan || "BASIC",
     planCode: (school.plan || "BASIC").toUpperCase(),
     status: school.subscriptionStatus || "TRIAL",
+    schoolName: school.name,
     effectiveStatus,
     isActive,
     isExpired,

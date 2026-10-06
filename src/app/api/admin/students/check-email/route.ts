@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSchoolAdmin } from "@/lib/auth/requireSchoolAdmin";
 import connectToDatabase from "@/lib/db";
 import Student from "@/models/Student";
+import StudentEnrollment from "@/models/StudentEnrollment";
 import User from "@/models/User";
 import { normalizeEmail } from "@/lib/utils/email";
 
@@ -27,51 +28,104 @@ export async function GET(req: NextRequest) {
 
     await connectToDatabase();
 
-    // Check if another student in the same school has this email
+    // 1. Check if a global student identity exists with this email
     const studentQuery: Record<string, unknown> = {
-      schoolId,
       email: normalizedEmail,
+      isDeleted: false,
     };
-
     if (excludeStudentId) {
       studentQuery._id = { $ne: excludeStudentId };
     }
 
-    const existingStudent = await Student.findOne(studentQuery).select("_id firstName lastName admissionNumber");
+    const existingStudent = await Student.findOne(studentQuery).select(
+      "_id firstName lastName phone gender dateOfBirth bloodGroup address avatarUrl"
+    );
 
     if (existingStudent) {
+      // Check if student already has an active enrollment in THIS school
+      const enrollmentQuery: Record<string, unknown> = {
+        schoolId,
+        studentId: existingStudent._id,
+        isDeleted: false,
+      };
+      if (excludeStudentId) {
+        enrollmentQuery._id = { $ne: excludeStudentId };
+      }
+
+      const existingEnrollment = await StudentEnrollment.findOne(enrollmentQuery);
+
+      if (existingEnrollment) {
+        return NextResponse.json({
+          success: true,
+          available: false,
+          isEnrolledInCurrentSchool: true,
+          reason: "Student is already enrolled in this school.",
+        });
+      }
+
+      // Found in another school: ALLOW multi-school enrollment!
       return NextResponse.json({
         success: true,
-        available: false,
-        reason: "Email address is already used by another student in this school.",
+        available: true,
+        existingStudent: true,
+        student: {
+          id: existingStudent._id.toString(),
+          firstName: existingStudent.firstName,
+          lastName: existingStudent.lastName,
+          phone: existingStudent.phone || "",
+          gender: existingStudent.gender,
+          dateOfBirth: existingStudent.dateOfBirth,
+          bloodGroup: existingStudent.bloodGroup || "",
+          avatarUrl: existingStudent.avatarUrl || "",
+        },
+        message: `Existing student found: ${existingStudent.firstName} ${existingStudent.lastName}. Enrolling will link this student to your school without creating a duplicate account.`,
       });
     }
 
-    // Check if user login account exists with this email
+    // 2. Check if a user login account exists with this email
     const existingUser = await User.findOne({ email: normalizedEmail }).select("_id role studentId schoolId");
     if (existingUser) {
-      // If it is linked to the excluded student, it's allowed
-      if (
-        excludeStudentId &&
-        existingUser.role === "STUDENT" &&
-        existingUser.studentId?.toString() === excludeStudentId
-      ) {
+      if (existingUser.role !== "STUDENT") {
         return NextResponse.json({
           success: true,
-          available: true,
+          available: false,
+          reason: `Email is already associated with an existing ${existingUser.role} account.`,
         });
+      }
+
+      if (existingUser.studentId) {
+        const enrollmentQuery: Record<string, unknown> = {
+          schoolId,
+          studentId: existingUser.studentId,
+          isDeleted: false,
+        };
+        if (excludeStudentId) {
+          enrollmentQuery._id = { $ne: excludeStudentId };
+        }
+        const existingEnrollment = await StudentEnrollment.findOne(enrollmentQuery);
+
+        if (existingEnrollment) {
+          return NextResponse.json({
+            success: true,
+            available: false,
+            isEnrolledInCurrentSchool: true,
+            reason: "Student is already enrolled in this school.",
+          });
+        }
       }
 
       return NextResponse.json({
         success: true,
-        available: false,
-        reason: "Email is already associated with an existing user account.",
+        available: true,
+        existingStudent: true,
+        message: "Existing student user account found. Enrolling will link this student to your school.",
       });
     }
 
     return NextResponse.json({
       success: true,
       available: true,
+      existingStudent: false,
     });
   } catch (err: unknown) {
     console.error("GET /api/admin/students/check-email error:", err);

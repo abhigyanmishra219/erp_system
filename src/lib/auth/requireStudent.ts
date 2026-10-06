@@ -5,6 +5,7 @@ import { verifyToken, UserJWTPayload } from "@/lib/jwt";
 import connectToDatabase from "@/lib/db";
 import User, { IUser } from "@/models/User";
 import Student, { IStudent } from "@/models/Student";
+import StudentEnrollment from "@/models/StudentEnrollment";
 import School, { ISchool } from "@/models/School";
 
 export interface AuthenticatedStudentUser {
@@ -151,16 +152,109 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
     };
   }
 
-  // 6. Verify valid schoolId association
-  if (!user.schoolId || !mongoose.Types.ObjectId.isValid(user.schoolId.toString())) {
+  // 6. Find global student profile for this user
+  let studentGlobal = await Student.findOne({
+    $or: [
+      { userId: user._id },
+      ...(user.email ? [{ email: user.email.toLowerCase() }] : []),
+    ],
+    isDeleted: false,
+  });
+
+  // 7. Resolve Active School Context
+  let targetSchoolId: string | null = null;
+
+  // Check explicit tenant requested in header or cookie
+  if (req) {
+    const headerSchoolId = req.headers.get("x-school-id");
+    const cookieSchoolId = req.cookies.get("active_school_id")?.value;
+    if (headerSchoolId && mongoose.Types.ObjectId.isValid(headerSchoolId)) {
+      targetSchoolId = headerSchoolId;
+    } else if (cookieSchoolId && mongoose.Types.ObjectId.isValid(cookieSchoolId)) {
+      targetSchoolId = cookieSchoolId;
+    }
+  }
+
+  // Fallback to user.schoolId
+  if (!targetSchoolId && user.schoolId && mongoose.Types.ObjectId.isValid(user.schoolId.toString())) {
+    targetSchoolId = user.schoolId.toString();
+  }
+
+  // 8. Find active enrollment in target school
+  let enrollment = null;
+  if (studentGlobal && targetSchoolId) {
+    enrollment = await StudentEnrollment.findOne({
+      studentId: studentGlobal._id,
+      schoolId: new mongoose.Types.ObjectId(targetSchoolId),
+      isDeleted: false,
+    })
+      .populate("academicYearId", "name status")
+      .populate("classId", "name code")
+      .populate("sectionId", "name")
+      .lean();
+  }
+
+  // If no enrollment found for targetSchoolId, check if student has any active enrollment in any school
+  if (!enrollment && studentGlobal) {
+    enrollment = await StudentEnrollment.findOne({
+      studentId: studentGlobal._id,
+      isDeleted: false,
+    })
+      .populate("academicYearId", "name status")
+      .populate("classId", "name code")
+      .populate("sectionId", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (enrollment) {
+      targetSchoolId = enrollment.schoolId.toString();
+    }
+  }
+
+  // Backward compatibility: If no StudentEnrollment exists yet, check legacy Student.schoolId
+  let legacyStudentDoc: IStudent | null = null;
+  if (!enrollment) {
+    if (targetSchoolId) {
+      legacyStudentDoc = await Student.findOne({
+        schoolId: targetSchoolId,
+        $or: [
+          { userId: user._id },
+          ...(user.email ? [{ email: user.email.toLowerCase() }] : []),
+        ],
+        isDeleted: false,
+      })
+        .populate("academicYearId", "name status")
+        .populate("classId", "name code")
+        .populate("sectionId", "name")
+        .lean();
+    }
+
+    if (!legacyStudentDoc && user.schoolId) {
+      targetSchoolId = user.schoolId.toString();
+      legacyStudentDoc = await Student.findOne({
+        schoolId: targetSchoolId,
+        $or: [
+          { userId: user._id },
+          ...(user.email ? [{ email: user.email.toLowerCase() }] : []),
+        ],
+        isDeleted: false,
+      })
+        .populate("academicYearId", "name status")
+        .populate("classId", "name code")
+        .populate("sectionId", "name")
+        .lean();
+    }
+  }
+
+  if (!enrollment && !legacyStudentDoc) {
     return {
       success: false,
       response: NextResponse.json(
         {
           success: false,
           error: {
-            code: "NO_TENANT_ASSOCIATION",
-            message: "This student account is not linked to an active school tenant.",
+            code: "NO_ACTIVE_ENROLLMENT",
+            message: "No active school enrollment found for your student account.",
           },
         },
         { status: 403 }
@@ -168,10 +262,12 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
     };
   }
 
-  const schoolIdStr = user.schoolId.toString();
+  const activeSchoolIdStr = enrollment
+    ? enrollment.schoolId.toString()
+    : legacyStudentDoc!.schoolId!.toString();
 
-  // 7. Fetch tenant School record
-  const school: ISchool | null = await School.findById(schoolIdStr).lean();
+  // 9. Fetch active tenant School record
+  const school: ISchool | null = await School.findById(activeSchoolIdStr).lean();
 
   if (!school || school.isDeleted) {
     return {
@@ -189,7 +285,7 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
     };
   }
 
-  // 8. Verify school active lifecycle
+  // 10. Verify school active lifecycle
   if (school.status === "SUSPENDED") {
     return {
       success: false,
@@ -222,44 +318,9 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
     };
   }
 
-  // 9. Fetch Student Profile corresponding to this User and School
-  let studentDoc: IStudent | null = await Student.findOne({
-    schoolId: schoolIdStr,
-    userId: user._id,
-  })
-    .populate("academicYearId", "name status")
-    .populate("classId", "name code")
-    .populate("sectionId", "name")
-    .lean();
-
-  if (!studentDoc && user.email) {
-    studentDoc = await Student.findOne({
-      schoolId: schoolIdStr,
-      email: user.email.toLowerCase(),
-    })
-      .populate("academicYearId", "name status")
-      .populate("classId", "name code")
-      .populate("sectionId", "name")
-      .lean();
-  }
-
-  if (!studentDoc) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "STUDENT_PROFILE_NOT_FOUND",
-            message: "Student profile record not found for this user account.",
-          },
-        },
-        { status: 404 }
-      ),
-    };
-  }
-
-  if (studentDoc.status === "INACTIVE") {
+  // Check enrollment active status
+  const activeStatus = enrollment ? enrollment.status : legacyStudentDoc!.status;
+  if (activeStatus === "INACTIVE") {
     return {
       success: false,
       response: NextResponse.json(
@@ -267,7 +328,7 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
           success: false,
           error: {
             code: "STUDENT_INACTIVE",
-            message: "Your student profile is marked inactive. Please contact school administration.",
+            message: "Your enrollment at this school is marked inactive. Please contact school administration.",
           },
         },
         { status: 403 }
@@ -275,10 +336,30 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
     };
   }
 
-  const studentIdStr = studentDoc._id.toString();
-  const classIdStr = (studentDoc.classId as any)?._id?.toString() || studentDoc.classId?.toString();
-  const sectionIdStr = (studentDoc.sectionId as any)?._id?.toString() || studentDoc.sectionId?.toString();
-  const academicYearIdStr = (studentDoc.academicYearId as any)?._id?.toString() || studentDoc.academicYearId?.toString();
+  // Construct combined student profile for active school context
+  const s = studentGlobal || legacyStudentDoc!;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const effectiveClass = enrollment ? (enrollment.classId as any) : (legacyStudentDoc as any)?.classId;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const effectiveSection = enrollment ? (enrollment.sectionId as any) : (legacyStudentDoc as any)?.sectionId;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const effectiveYear = enrollment ? (enrollment.academicYearId as any) : (legacyStudentDoc as any)?.academicYearId;
+
+  const studentDoc = {
+    ...s.toObject ? s.toObject() : s,
+    admissionNumber: enrollment ? enrollment.admissionNumber : legacyStudentDoc!.admissionNumber,
+    rollNumber: enrollment ? enrollment.rollNumber : legacyStudentDoc!.rollNumber,
+    classId: effectiveClass,
+    sectionId: effectiveSection,
+    academicYearId: effectiveYear,
+    schoolId: activeSchoolIdStr,
+    status: activeStatus,
+  } as unknown as IStudent;
+
+  const studentIdStr = s._id.toString();
+  const classIdStr = effectiveClass?._id?.toString() || effectiveClass?.toString();
+  const sectionIdStr = effectiveSection?._id?.toString() || effectiveSection?.toString();
+  const academicYearIdStr = effectiveYear?._id?.toString() || effectiveYear?.toString();
 
   return {
     success: true,
@@ -287,16 +368,16 @@ export async function requireStudent(req?: NextRequest): Promise<StudentAuthResu
         id: user._id.toString(),
         _id: user._id.toString(),
         email: user.email,
-        name: user.name || `${studentDoc.firstName} ${studentDoc.lastName}`.trim(),
+        name: user.name || `${s.firstName} ${s.lastName}`.trim(),
         role: "STUDENT",
         isActive: user.isActive,
-        schoolId: schoolIdStr,
+        schoolId: activeSchoolIdStr,
         mustChangePassword: user.mustChangePassword ?? false,
       },
       student: studentDoc,
       studentId: studentIdStr,
       school,
-      schoolId: schoolIdStr,
+      schoolId: activeSchoolIdStr,
       classId: classIdStr,
       sectionId: sectionIdStr,
       academicYearId: academicYearIdStr,

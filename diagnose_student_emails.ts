@@ -39,7 +39,7 @@ async function diagnoseDuplicates() {
     const normEmail = rawEmail.trim().toLowerCase();
     if (!normEmail) continue;
 
-    const key = `${s.schoolId.toString()}:::${normEmail}`;
+    const key = `${s.schoolId?.toString() || "no_school"}:::${normEmail}`;
     if (!map.has(key)) {
       map.set(key, []);
     }

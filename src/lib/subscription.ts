@@ -208,6 +208,7 @@ export interface EffectiveSubscription {
   startDate: string | null;
   expiryDate: string | null;
   daysRemaining: number;
+  schoolName?: string;
 }
 
 /**

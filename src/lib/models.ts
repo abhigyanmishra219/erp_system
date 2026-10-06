@@ -23,6 +23,7 @@ import Plan from "@/models/Plan";
 import School from "@/models/School";
 import Section from "@/models/Section";
 import Student from "@/models/Student";
+import StudentEnrollment from "@/models/StudentEnrollment";
 import StudentFeeAccount from "@/models/StudentFeeAccount";
 import StudentFeeAssignment from "@/models/StudentFeeAssignment";
 import StudentParent from "@/models/StudentParent";
@@ -59,6 +60,7 @@ export const models = {
   School,
   Section,
   Student,
+  StudentEnrollment,
   StudentFeeAccount,
   StudentFeeAssignment,
   StudentParent,

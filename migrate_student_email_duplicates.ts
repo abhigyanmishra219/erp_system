@@ -45,7 +45,7 @@ async function migrateDuplicates() {
 
     if (!normEmail) continue;
 
-    const key = `${st.schoolId.toString()}:::${normEmail}`;
+    const key = `${st.schoolId?.toString() || "no_school"}:::${normEmail}`;
 
     if (!seenMap.has(key)) {
       // First student keeps the email
