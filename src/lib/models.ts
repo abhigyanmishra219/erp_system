@@ -18,6 +18,7 @@ import LeaveRequest from "@/models/LeaveRequest";
 import Notice from "@/models/Notice";
 import Notification from "@/models/Notification";
 import Parent from "@/models/Parent";
+import PasswordResetRequest from "@/models/PasswordResetRequest";
 import Plan from "@/models/Plan";
 import School from "@/models/School";
 import Section from "@/models/Section";
@@ -53,6 +54,7 @@ export const models = {
   Notice,
   Notification,
   Parent,
+  PasswordResetRequest,
   Plan,
   School,
   Section,

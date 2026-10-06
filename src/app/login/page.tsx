@@ -177,20 +177,12 @@ export default function LoginPage() {
 
               {/* Field 2: Password */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="block text-xs font-semibold uppercase tracking-wider text-foreground"
-                  >
-                    Password
-                  </label>
-                  <a
-                    href="#"
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="block text-xs font-semibold uppercase tracking-wider text-foreground"
+                >
+                  Password
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
                     <Lock className="w-4 h-4" />
@@ -217,6 +209,15 @@ export default function LoginPage() {
                       <Eye className="w-4 h-4" />
                     )}
                   </button>
+                </div>
+                {/* Forgot Password Link below password field */}
+                <div className="flex justify-end pt-1">
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-primary hover:underline font-medium transition-colors"
+                  >
+                    Forgot Password?
+                  </Link>
                 </div>
               </div>
 
