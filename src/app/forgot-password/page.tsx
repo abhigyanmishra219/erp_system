@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
-  const [canResend, setCanResend] = useState(false);
+  const canResend = resendCooldown <= 0;
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   // Step 3: Password Reset State
@@ -58,6 +58,7 @@ export default function ForgotPasswordPage() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Status & Error Messages
+  const [errorTitle, setErrorTitle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
 
@@ -65,12 +66,9 @@ export default function ForgotPasswordPage() {
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (step === "OTP" && resendCooldown > 0) {
-      setCanResend(false);
       timer = setTimeout(() => {
         setResendCooldown((prev) => prev - 1);
       }, 1000);
-    } else if (step === "OTP" && resendCooldown <= 0) {
-      setCanResend(true);
     }
     return () => {
       if (timer) clearTimeout(timer);
@@ -80,11 +78,13 @@ export default function ForgotPasswordPage() {
   // Handle Step 1: Send OTP
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorTitle(null);
     setErrorMsg(null);
     setInfoMsg(null);
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
+      setErrorTitle("Email Required");
       setErrorMsg("Please enter your registered email address.");
       return;
     }
@@ -92,6 +92,7 @@ export default function ForgotPasswordPage() {
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
+      setErrorTitle("Invalid Email");
       setErrorMsg("Please enter a valid email address.");
       return;
     }
@@ -107,20 +108,38 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to process request. Please try again.");
+        if (
+          data.code === "EMAIL_NOT_REGISTERED" ||
+          data.error === "Email not registered"
+        ) {
+          setErrorTitle("Email not registered");
+          setErrorMsg(
+            data.message ||
+              "No account was found with this email address. Please check the email and try again."
+          );
+        } else {
+          setErrorTitle(null);
+          setErrorMsg(
+            data.error || "Failed to process request. Please try again."
+          );
+        }
+        return;
       }
 
       // Transition to OTP step
       setStep("OTP");
       setOtpDigits(["", "", "", "", "", ""]);
       setResendCooldown(60);
-      setCanResend(false);
       setInfoMsg(
-        "A 6-digit verification code has been sent to your registered email address."
+        "Check your registered email for the 6-digit OTP."
       );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send code";
-      setErrorMsg(msg);
+      setErrorTitle(null);
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "Failed to connect to the server. Please try again."
+      );
     } finally {
       setIsSendingEmail(false);
     }
@@ -130,6 +149,7 @@ export default function ForgotPasswordPage() {
   const handleResendOtp = async () => {
     if (!canResend || isSendingEmail) return;
 
+    setErrorTitle(null);
     setErrorMsg(null);
     setInfoMsg(null);
     setIsSendingEmail(true);
@@ -144,17 +164,29 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to resend verification code.");
+        if (
+          data.code === "EMAIL_NOT_REGISTERED" ||
+          data.error === "Email not registered"
+        ) {
+          setErrorTitle("Email not registered");
+          setErrorMsg(
+            data.message ||
+              "No account was found with this email address. Please check the email and try again."
+          );
+        } else {
+          setErrorTitle(null);
+          setErrorMsg(data.error || "Failed to resend verification code.");
+        }
+        return;
       }
 
       setResendCooldown(60);
-      setCanResend(false);
       setOtpDigits(["", "", "", "", "", ""]);
       setInfoMsg("A new verification code has been sent to your email.");
       otpInputsRef.current[0]?.focus();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to resend code";
-      setErrorMsg(msg);
+      setErrorTitle(null);
+      setErrorMsg(err instanceof Error ? err.message : "Failed to resend code");
     } finally {
       setIsSendingEmail(false);
     }
@@ -215,11 +247,13 @@ export default function ForgotPasswordPage() {
   // Handle Step 2: Verify OTP
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorTitle(null);
     setErrorMsg(null);
     setInfoMsg(null);
 
     const fullOtp = otpDigits.join("");
     if (fullOtp.length !== 6) {
+      setErrorTitle("Invalid Code");
       setErrorMsg("Please enter all 6 digits of the verification code.");
       return;
     }
@@ -244,9 +278,12 @@ export default function ForgotPasswordPage() {
       // Store single-use reset authorization token in state
       setResetToken(data.resetToken);
       setStep("RESET");
+      setErrorTitle(null);
+      setErrorMsg(null);
       setInfoMsg(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to verify code";
+      setErrorTitle(null);
       setErrorMsg(msg);
     } finally {
       setIsVerifyingOtp(false);
@@ -265,20 +302,24 @@ export default function ForgotPasswordPage() {
   // Handle Step 3: Reset Password
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorTitle(null);
     setErrorMsg(null);
 
     if (!resetToken) {
+      setErrorTitle("Session Expired");
       setErrorMsg("Session has expired. Please restart the password reset process.");
       setStep("EMAIL");
       return;
     }
 
     if (!isPasswordValid) {
+      setErrorTitle("Invalid Password");
       setErrorMsg("Please meet all password requirements.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
+      setErrorTitle("Password Mismatch");
       setErrorMsg("New password and confirm password do not match.");
       return;
     }
@@ -306,9 +347,12 @@ export default function ForgotPasswordPage() {
       setResetToken(null);
       setNewPassword("");
       setConfirmPassword("");
+      setErrorTitle(null);
+      setErrorMsg(null);
       setStep("SUCCESS");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to reset password";
+      setErrorTitle(null);
       setErrorMsg(msg);
     } finally {
       setIsResettingPassword(false);
@@ -369,22 +413,6 @@ export default function ForgotPasswordPage() {
 
         {/* Card Container */}
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 shadow-2xl relative backdrop-blur-xl">
-          {/* Error Alert */}
-          {errorMsg && (
-            <div className="mb-5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {/* Info Alert */}
-          {infoMsg && (
-            <div className="mb-5 p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{infoMsg}</span>
-            </div>
-          )}
-
           {/* STEP 1: Enter Email */}
           {step === "EMAIL" && (
             <form onSubmit={handleSendOtp} noValidate className="space-y-5">
@@ -403,14 +431,40 @@ export default function ForgotPasswordPage() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorMsg || errorTitle) {
+                        setErrorMsg(null);
+                        setErrorTitle(null);
+                      }
+                    }}
                     placeholder="Enter your registered email"
                     required
                     autoFocus
-                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-input border border-input-border focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200"
+                    className={`w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-input border ${
+                      errorMsg
+                        ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                        : "border-input-border focus:border-primary focus:ring-primary/20"
+                    } focus:ring-2 text-foreground placeholder:text-muted-foreground focus:outline-none transition-all duration-200`}
                   />
                 </div>
               </div>
+
+              {/* Error Alert placed right below Email input as specified in requirements */}
+              {errorMsg && (
+                <div
+                  id="email-not-registered-error"
+                  className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-start gap-2.5 transition-all duration-200"
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+                  <div className="space-y-0.5 text-left">
+                    {errorTitle && (
+                      <p className="font-semibold text-destructive">{errorTitle}</p>
+                    )}
+                    <p className="text-destructive/90">{errorMsg}</p>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -455,6 +509,30 @@ export default function ForgotPasswordPage() {
                   {maskEmail(email.trim())}
                 </p>
               </div>
+
+              {/* Info Alert: Verification code sent confirmation */}
+              {infoMsg && (
+                <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 text-left">
+                    <p className="font-semibold text-primary">Verification code sent</p>
+                    <p className="text-primary/90">{infoMsg}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Alert in Step 2 */}
+              {errorMsg && (
+                <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+                  <div className="space-y-0.5 text-left">
+                    {errorTitle && (
+                      <p className="font-semibold text-destructive">{errorTitle}</p>
+                    )}
+                    <p className="text-destructive/90">{errorMsg}</p>
+                  </div>
+                </div>
+              )}
 
               {/* 6-Digit OTP Input */}
               <div className="space-y-2">
@@ -535,6 +613,7 @@ export default function ForgotPasswordPage() {
                     onClick={() => {
                       setStep("EMAIL");
                       setErrorMsg(null);
+                      setErrorTitle(null);
                       setInfoMsg(null);
                     }}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors hover:underline"
@@ -549,6 +628,18 @@ export default function ForgotPasswordPage() {
           {/* STEP 3: Create New Password */}
           {step === "RESET" && (
             <form onSubmit={handleResetPassword} noValidate className="space-y-5">
+              {/* Error Alert in Step 3 */}
+              {errorMsg && (
+                <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+                  <div className="space-y-0.5 text-left">
+                    {errorTitle && (
+                      <p className="font-semibold text-destructive">{errorTitle}</p>
+                    )}
+                    <p className="text-destructive/90">{errorMsg}</p>
+                  </div>
+                </div>
+              )}
               {/* New Password */}
               <div className="space-y-1.5">
                 <label

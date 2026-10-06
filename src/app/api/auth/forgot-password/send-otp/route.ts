@@ -11,8 +11,6 @@ import { createAuditLog } from "@/lib/audit";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 const MAX_HOURLY_REQUESTS = 5;
-const GENERIC_RESPONSE_MESSAGE =
-  "If an account exists for this email address, a verification code has been sent.";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,7 +39,36 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
 
-    // Check 60-second cooldown for this email
+    // 1. Check if user exists in database
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      // DO NOT generate OTP, DO NOT send email, DO NOT create password reset record
+      return NextResponse.json(
+        {
+          success: false,
+          code: "EMAIL_NOT_REGISTERED",
+          error: "Email not registered",
+          message:
+            "No account was found with this email address. Please check the email and try again.",
+        },
+        { status: 404 }
+      );
+    }
+
+    // 2. Respect account status: check if active
+    if (user.isActive === false) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "ACCOUNT_INACTIVE",
+          error: "Account is disabled. Please contact administrator.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // 3. Check 60-second cooldown for this email
     const oneMinuteAgo = new Date(Date.now() - RESEND_COOLDOWN_SECONDS * 1000);
     const recentRequest = await PasswordResetRequest.findOne({
       email: normalizedEmail,
@@ -59,6 +86,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
+          code: "COOLDOWN_ACTIVE",
           error: `Please wait ${remainingSeconds} second${
             remainingSeconds === 1 ? "" : "s"
           } before requesting another verification code.`,
@@ -67,7 +95,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Rate limiting: max 5 requests per hour
+    // 4. Rate limiting: max 5 requests per hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const hourlyRequestCount = await PasswordResetRequest.countDocuments({
       email: normalizedEmail,
@@ -78,6 +106,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
+          code: "RATE_LIMIT_EXCEEDED",
           error:
             "Too many verification requests. Please try again in an hour.",
         },
@@ -85,32 +114,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if account exists
-    const user = await User.findOne({ email: normalizedEmail });
-
-    // Anti-enumeration protection: return identical generic message if user doesn't exist or is disabled
-    if (!user || user.isActive === false) {
-      return NextResponse.json(
-        {
-          success: true,
-          message: GENERIC_RESPONSE_MESSAGE,
-        },
-        { status: 200 }
-      );
-    }
-
-    // Invalidate any existing unused reset requests for this email
+    // 5. Invalidate any existing unused reset requests for this email
     await PasswordResetRequest.updateMany(
       { email: normalizedEmail, usedAt: null },
       { $set: { usedAt: new Date() } }
     );
 
-    // Generate cryptographically secure 6-digit OTP
+    // 6. Generate cryptographically secure 6-digit OTP
     const rawOtp = crypto.randomInt(100000, 1000000).toString();
     const otpHash = await bcrypt.hash(rawOtp, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Save reset request record
+    // 7. Save reset request record
     await PasswordResetRequest.create({
       userId: user._id,
       email: normalizedEmail,
@@ -120,7 +135,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     });
 
-    // Send OTP to registered email
+    // 8. Send OTP to registered email
     try {
       await sendPasswordResetOtpEmail(user.email, rawOtp);
     } catch (emailErr) {
@@ -138,7 +153,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Audit log
+    // 9. Audit log
     await createAuditLog({
       userId: user._id.toString(),
       userRole: user.role,
@@ -154,7 +169,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: GENERIC_RESPONSE_MESSAGE,
+        message:
+          "Verification code sent. Check your registered email for the 6-digit OTP.",
       },
       { status: 200 }
     );
