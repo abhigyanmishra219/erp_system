@@ -30,7 +30,7 @@ export interface IStudent extends Document {
   studentId?: string;
   rollNumber?: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   dateOfBirth: Date;
@@ -128,8 +128,8 @@ const StudentSchema = new Schema<IStudent>(
     },
     lastName: {
       type: String,
-      required: [true, "Last name is required"],
       trim: true,
+      default: "",
     },
     email: {
       type: String,

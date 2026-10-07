@@ -35,7 +35,7 @@ interface StudentItem {
   studentId?: string;
   rollNumber?: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   fullName: string;
   email?: string;
   phone?: string;
@@ -514,7 +514,7 @@ export default function StudentsDirectoryPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs flex-shrink-0">
                           {st.firstName[0]}
-                          {st.lastName[0]}
+                          {st.lastName?.[0] || ""}
                         </div>
                         <div>
                           <Link

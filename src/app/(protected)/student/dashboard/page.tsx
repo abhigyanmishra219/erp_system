@@ -34,7 +34,7 @@ interface DashboardData {
     admissionNumber: string;
     rollNumber: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     fullName: string;
     email: string;
     phone: string;
@@ -246,7 +246,7 @@ export default function StudentDashboardPage() {
             ) : (
               <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white text-xl sm:text-2xl font-bold ring-2 ring-emerald-500/40 shadow-lg">
                 {profileSummary.firstName[0]}
-                {profileSummary.lastName[0]}
+                {profileSummary.lastName?.[0] || ""}
               </div>
             )}
             <div>

@@ -56,7 +56,7 @@ export const IMPORT_CONFIGS: Record<ImportType, ImportCategoryConfig> = {
       {
         key: "lastName",
         label: "Last Name",
-        required: true,
+        required: false,
         description: "Student's last name / surname",
         sample: "Sharma",
         aliases: ["last name", "lastname", "last_name", "surname"],

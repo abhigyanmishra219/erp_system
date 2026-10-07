@@ -234,8 +234,8 @@ export default function CreateStudentPage() {
     setFormError(null);
 
     // Validation
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      setFormError("Student first and last name are required.");
+    if (!formData.firstName.trim()) {
+      setFormError("Student first name is required.");
       return;
     }
     if (!formData.admissionNumber.trim()) {
@@ -413,11 +413,10 @@ export default function CreateStudentPage() {
 
             <div>
               <label className="block text-xs font-semibold text-foreground mb-1">
-                Last Name <span className="text-rose-500">*</span>
+                Last Name (Optional)
               </label>
               <input
                 type="text"
-                required
                 placeholder="e.g. Sharma"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}

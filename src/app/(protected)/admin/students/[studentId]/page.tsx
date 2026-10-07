@@ -43,7 +43,7 @@ interface StudentProfile {
   studentId?: string;
   rollNumber?: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   fullName: string;
   email?: string;
   phone?: string;
@@ -655,7 +655,7 @@ export default function StudentDetailPage({
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-bold text-xl flex items-center justify-center shadow-inner flex-shrink-0">
               {student.firstName[0]}
-              {student.lastName[0]}
+              {student.lastName?.[0] || ""}
             </div>
 
             <div className="space-y-1">
@@ -1934,10 +1934,9 @@ export default function StudentDetailPage({
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1">Last Name *</label>
+                  <label className="block font-semibold mb-1">Last Name (Optional)</label>
                   <input
                     type="text"
-                    required
                     value={editFormData.lastName}
                     onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground"

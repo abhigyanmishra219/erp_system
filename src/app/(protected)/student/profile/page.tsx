@@ -36,7 +36,7 @@ interface ProfileData {
     admissionNumber: string;
     rollNumber: string;
     firstName: string;
-    lastName: string;
+    lastName?: string;
     fullName: string;
     email: string;
     phone: string;
@@ -325,7 +325,7 @@ export default function StudentProfilePage() {
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white text-2xl font-bold ring-2 ring-emerald-500/40 shadow-lg">
                 {student.firstName[0]}
-                {student.lastName[0]}
+                {student.lastName?.[0] || ""}
               </div>
             )}
             <div>

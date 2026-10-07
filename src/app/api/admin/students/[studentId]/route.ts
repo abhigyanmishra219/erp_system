@@ -75,8 +75,8 @@ export async function GET(
         studentId: enrollment.studentIdCode || enrollment.admissionNumber,
         rollNumber: enrollment.rollNumber || "",
         firstName: s.firstName,
-        lastName: s.lastName,
-        fullName: `${s.firstName} ${s.lastName}`.trim(),
+        lastName: s.lastName || "",
+        fullName: `${s.firstName} ${s.lastName || ""}`.trim(),
         email: s.email || "",
         phone: s.phone || "",
         dateOfBirth: s.dateOfBirth,
@@ -449,7 +449,7 @@ export async function PATCH(
       metadata: {
         studentId: (student ? student._id : enrollment?.studentId)?.toString(),
         admissionNumber: enrollment?.admissionNumber || student?.admissionNumber,
-        name: student ? `${student.firstName} ${student.lastName}` : "",
+        name: student ? `${student.firstName} ${student.lastName || ""}`.trim() : "",
         placementChanged,
       },
     });

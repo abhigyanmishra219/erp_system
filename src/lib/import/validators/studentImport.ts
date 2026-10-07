@@ -136,16 +136,6 @@ export class StudentImportValidator {
         });
         hasError = true;
       }
-      if (!lastName) {
-        errors.push({
-          rowNumber,
-          field: "lastName",
-          value: "",
-          errorCode: "REQUIRED_FIELD",
-          message: "Last Name is required.",
-        });
-        hasError = true;
-      }
 
       // 3. Gender
       const rawGender = String(data.gender || "").trim().toUpperCase();

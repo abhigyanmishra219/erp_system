@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
       // Create new global student record
       studentDoc = new Student({
         firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
+        lastName: validatedData.lastName || "",
         email: normalizedStudentEmail,
         phone: validatedData.phone || "",
         dateOfBirth: new Date(validatedData.dateOfBirth),
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
         const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
         const studentUser = new User({
-          name: `${validatedData.firstName} ${validatedData.lastName}`.trim(),
+          name: `${validatedData.firstName} ${validatedData.lastName || ""}`.trim(),
           email: studentLoginEmail,
           password: hashedPassword,
           role: "STUDENT",
